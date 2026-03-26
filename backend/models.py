@@ -3,12 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 class Univ(db.Model):
-    __table__name = "univ"
+    __tablename__ = "univ"
     univ_id = db.Column(db.Integer,primary_key = True, autoincrement = True)
     univ_name = db.Column(db.String)
 
-class Admin (db.Model):
-    __table__name = "admin"
+class Admin(db.Model):
+    __tablename__ = "admin"
     admin_id = db.Column(db.Integer,primary_key = True, autoincrement = True)
     name = db.Column(db.String)
     username = db.Column(db.String)
@@ -18,8 +18,8 @@ class Admin (db.Model):
     
     university = db.relationship('Univ', backref='Admin', lazy=True)
     
-class Stud (db.Model):
-    __table__name = "stud"
+class Stud(db.Model):
+    __tablename__ = "stud"
     stud_id = db.Column(db.Integer,primary_key = True, autoincrement = True)
     first_name = db.Column(db.String)
     last_name = db.Column(db.String)

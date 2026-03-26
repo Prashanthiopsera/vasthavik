@@ -2,7 +2,7 @@ import Sidebar from './Navbar/Sidebar';
 import stuImage from './assets_components/admin.avif';
 import { ethers } from 'ethers';
 import React, { useState, useEffect } from 'react';
-import ContractABI from '/Users/prashanthireddy/Desktop/Project/code/vastavik/frontend/src/contractabi/contractabi.js';
+import ContractABI from '../contractabi/contractabi';
 
 const VerifyCerti = () => {
     const [studentId, setStudentId] = useState('');

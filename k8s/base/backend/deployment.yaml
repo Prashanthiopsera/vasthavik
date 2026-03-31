@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vasthavik-backend
+  labels:
+    app: vasthavik
+    component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vasthavik
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: vasthavik
+        component: backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: backend
+          image: vasthavik-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5001
+              protocol: TCP
+          env:
+            - name: FLASK_ENV
+              value: production
+            - name: PORT
+              value: "5001"
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vasthavik-backend-secret
+                  key: secret-key
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: vasthavik-backend-secret
+                  key: database-url
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: vasthavik-backend-secret
+                  key: db-pass
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL

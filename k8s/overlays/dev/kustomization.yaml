@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: vasthavik-dev
+
+resources:
+  - ../../base
+  - namespace.yaml
+  - backend-secret.yaml
+
+# Image tags updated automatically by GitHub Actions CI
+images:
+  - name: vasthavik-backend
+    newName: PLACEHOLDER_ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/vasthavik-backend
+    newTag: latest
+  - name: vasthavik-frontend
+    newName: PLACEHOLDER_ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/vasthavik-frontend
+    newTag: latest
+
+patches:
+  - target:
+      kind: Deployment
+      name: vasthavik-backend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target:
+      kind: Deployment
+      name: vasthavik-frontend
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+commonLabels:
+  environment: dev
+  managed-by: argocd

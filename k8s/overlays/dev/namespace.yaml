@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vasthavik-dev
+  labels:
+    app: vasthavik
+    environment: dev

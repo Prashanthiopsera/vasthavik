@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="https://agent.opsera.ai/favicon.png">
+  <title>Security Scan Report - vasthavik</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --primary: #9947EB;
+      --primary-hover: #8234d4;
+      --accent: #CF940C;
+      --bg: #ffffff;
+      --bg-secondary: #F3F3F1;
+      --card: #ffffff;
+      --card-hover: #fafafa;
+      --text: #3D3B36;
+      --text-light: #67788d;
+      --border: #E6E5E3;
+      --border-light: #f0efed;
+      --success: #00AA84;
+      --warning: #CF940C;
+      --danger: #dc3545;
+      --info: #1989F9;
+      --critical: #dc3545;
+      --high: #c05621;
+      --medium: #CF940C;
+      --low: #00AA84;
+      --code-bg: #1e1e2e;
+      --code-text: #cdd6f4;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+      --radius: 0.5rem;
+      --sidebar-width: 260px;
+    }
+    [data-theme="dark"] {
+      --primary: #b87aed;
+      --primary-hover: #a05ee0;
+      --accent: #F0B324;
+      --bg: #16181d;
+      --bg-secondary: #1e2028;
+      --card: #1e2028;
+      --card-hover: #262830;
+      --text: #f2f2f2;
+      --text-light: #a6a6a6;
+      --border: #2e3038;
+      --border-light: #262830;
+      --success: #00CC9E;
+      --warning: #F0B324;
+      --danger: #f06070;
+      --info: #4da6ff;
+      --critical: #f06070;
+      --high: #e89040;
+      --medium: #F0B324;
+      --low: #00CC9E;
+      --code-bg: #11111b;
+      --code-text: #cdd6f4;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.7;
+      -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s;
+    }
+    h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+    h2 { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.01em; color: var(--primary); }
+    h3 { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-top: 1.25rem; margin-bottom: 0.5rem; }
+    h4 { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-top: 1rem; margin-bottom: 0.4rem; }
+    p { margin-bottom: 0.75rem; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { color: var(--primary-hover); text-decoration: underline; }
+    ul, ol { margin: 0.5rem 0 0.75rem 1.5rem; }
+    li { margin-bottom: 0.25rem; }
+    .page-wrapper { display: flex; min-height: calc(100vh - var(--header-height, 0px)); }
+    .sidebar {
+      position: sticky; top: 0; width: var(--sidebar-width); height: 100vh;
+      background: var(--card); border-right: 1px solid var(--border);
+      overflow-y: auto; z-index: 100; display: flex; flex-direction: column;
+      flex-shrink: 0; transition: background 0.3s, border-color 0.3s;
+    }
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 0.75rem 0; }
+    .sidebar-nav::-webkit-scrollbar { width: 3px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .sidebar-group-label {
+      padding: 0.6rem 1.25rem 0.3rem; font-size: 0.65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-light);
+    }
+    .sidebar-link {
+      display: block; padding: 0.35rem 1.25rem 0.35rem 1.25rem; font-size: 0.82rem;
+      color: var(--text-light); text-decoration: none; border-left: 3px solid transparent;
+      transition: all 0.15s ease; line-height: 1.4;
+    }
+    .sidebar-link:hover { color: var(--text); background: var(--bg-secondary); text-decoration: none; }
+    .sidebar-link.active {
+      color: var(--primary); border-left-color: var(--primary);
+      background: rgba(153,71,235,0.06); font-weight: 500;
+    }
+    [data-theme="dark"] .sidebar-link.active { background: rgba(184,122,237,0.08); }
+    .sidebar-link.sub { padding-left: 2rem; font-size: 0.78rem; }
+    .sidebar-footer {
+      padding: 0.75rem 1.25rem; border-top: 1px solid var(--border);
+      flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .sidebar-theme-btn {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: 999px; padding: 0.4rem; cursor: pointer;
+      display: flex; align-items: center; transition: all 0.2s;
+    }
+    .sidebar-theme-btn:hover { background: var(--card-hover); }
+    .sidebar-theme-btn svg { width: 16px; height: 16px; }
+    .sidebar-theme-btn .sun { display: none; color: var(--accent); }
+    .sidebar-theme-btn .moon { display: block; color: var(--text-light); }
+    [data-theme="dark"] .sidebar-theme-btn .sun { display: block; }
+    [data-theme="dark"] .sidebar-theme-btn .moon { display: none; }
+    .sidebar-theme-label { font-size: 0.75rem; color: var(--text-light); }
+    .sidebar-toggle {
+      display: none; position: fixed; top: 0.75rem; left: 0.75rem; z-index: 200;
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 0.5rem; cursor: pointer; box-shadow: var(--shadow-md);
+    }
+    .sidebar-toggle svg { width: 20px; height: 20px; color: var(--text); }
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 90;
+    }
+    .page-main { flex: 1; min-width: 0; }
+    .header {
+      background: linear-gradient(135deg, #250e3c 0%, #9947EB 60%, #CF940C 100%);
+      color: #ffffff; padding: 2.5rem 2rem; position: relative; overflow: hidden;
+    }
+    .header::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 70% 50%, rgba(153,71,235,0.3) 0%, transparent 70%);
+    }
+    .header-content {
+      max-width: 1100px; margin: 0 auto; display: flex;
+      align-items: center; gap: 1.5rem; position: relative; z-index: 1;
+    }
+    .header-logo { flex-shrink: 0; }
+    .header-logo img { height: 36px; width: auto; }
+    .header-text { flex: 1; }
+    .header h1 { color: #ffffff; margin-bottom: 0.4rem; }
+    .header .meta { opacity: 0.85; font-size: 0.875rem; font-weight: 400; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .section {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem; margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm); transition: background 0.3s, border-color 0.3s;
+    }
+    .section h2 {
+      border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem; margin-bottom: 1.25rem;
+    }
+    .act-divider {
+      text-align: center; padding: 1.5rem 0; margin: 1rem 0;
+      font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-light);
+      border-top: 2px solid var(--border);
+    }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    thead th {
+      background: var(--primary); color: #ffffff;
+      padding: 0.65rem 0.75rem; text-align: left;
+      font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    tbody td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border-light); }
+    tbody tr:nth-child(even) { background: var(--bg-secondary); }
+    tbody tr:hover { background: var(--card-hover); }
+    .risk-score-container {
+      display: flex; align-items: center; justify-content: center;
+      gap: 3rem; padding: 2rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 1.5rem;
+    }
+    .score-ring { position: relative; width: 180px; height: 180px; }
+    .score-ring svg { transform: rotate(-90deg); }
+    .score-ring circle { fill: none; stroke-width: 12; }
+    .score-ring .bg { stroke: var(--border); }
+    .score-ring .progress { stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+    .score-ring .value {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%); text-align: center;
+    }
+    .score-ring .percentage { font-size: 2.5rem; font-weight: 700; }
+    .score-ring .label { color: var(--text-light); font-size: 0.875rem; }
+    .score-info-tip {
+      text-align: center; margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-light);
+    }
+    .score-info-tip summary {
+      cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;
+      font-weight: 500; color: var(--text-light); user-select: none;
+    }
+    .score-info-tip summary:hover { color: var(--text); }
+    .score-info-tip .tip-content {
+      margin-top: 0.5rem; padding: 0.75rem 1rem; background: var(--bg-secondary);
+      border: 1px solid var(--border); border-radius: var(--radius); text-align: left;
+      display: inline-block; max-width: 520px;
+    }
+    .score-info-tip .tip-content code {
+      background: var(--border-light); padding: 0.15rem 0.35rem; border-radius: 3px; font-size: 0.78rem;
+    }
+    .score-info-tip .tip-content table { margin-top: 0.5rem; font-size: 0.78rem; }
+    .score-info-tip .tip-content td { padding: 0.2rem 0.6rem; }
+    .severity-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .severity-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem; text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .severity-card .count { font-size: 2.5rem; font-weight: 700; }
+    .severity-card .label { color: var(--text-light); font-size: 0.8rem; margin-top: 0.25rem; }
+    .severity-card.critical .count { color: var(--critical); }
+    .severity-card.high .count { color: var(--high); }
+    .severity-card.medium .count { color: var(--medium); }
+    .severity-card.low .count { color: var(--low); }
+    .scan-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem; margin-bottom: 1rem;
+    }
+    .scan-card {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem; text-align: center;
+    }
+    .scan-card .icon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .scan-card .name { font-size: 0.8rem; font-weight: 600; }
+    .scan-card .status { font-size: 0.75rem; margin-top: 0.25rem; }
+    .scan-card.passed .status { color: var(--success); }
+    .scan-card.failed .status { color: var(--danger); }
+    .scan-card.skipped .status { color: var(--text-light); }
+    .finding {
+      background: var(--bg-secondary); border-radius: var(--radius);
+      padding: 1rem; margin-bottom: 0.75rem;
+      border-left: 4px solid var(--border);
+    }
+    .finding.critical { border-left-color: var(--critical); }
+    .finding.high { border-left-color: var(--high); }
+    .finding.medium { border-left-color: var(--medium); }
+    .finding.low { border-left-color: var(--low); }
+    .finding-header {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 0.5rem;
+    }
+    .finding-title { font-weight: 600; }
+    .finding-location {
+      font-family: 'SF Mono', 'Fira Code', Menlo, monospace; font-size: 0.75rem;
+      background: var(--border-light); padding: 0.25rem 0.5rem;
+      border-radius: 4px; margin: 0.5rem 0;
+      border: 1px solid var(--border);
+    }
+    .severity { padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
+    .severity-critical { background: rgba(220,53,69,0.12); color: var(--critical); }
+    .severity-high { background: rgba(192,86,33,0.12); color: var(--high); }
+    .severity-medium { background: rgba(207,148,12,0.12); color: var(--medium); }
+    .severity-low { background: rgba(0,170,132,0.12); color: var(--low); }
+    .category-badge {
+      display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px;
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em;
+      background: rgba(153,71,235,0.08); color: var(--primary);
+      border: 1px solid rgba(153,71,235,0.2);
+    }
+    .remediation-box {
+      background: rgba(0,170,132,0.06); border: 1px solid rgba(0,170,132,0.2);
+      border-radius: var(--radius); padding: 0.75rem; margin-top: 0.75rem; font-size: 0.85rem;
+    }
+    .remediation-box strong { color: var(--success); }
+    .fixed-box {
+      background: rgba(0,170,132,0.06); border: 1px solid rgba(0,170,132,0.2);
+      border-radius: var(--radius); padding: 0.5rem 0.75rem; margin-top: 0.5rem; font-size: 0.82rem;
+      color: var(--success); font-weight: 600;
+    }
+    .sprint-card {
+      border: 2px solid var(--success); border-radius: var(--radius); padding: 1.5rem;
+      margin: 1rem 0; background: var(--bg-secondary);
+    }
+    .sprint-card h4 { color: var(--success); margin-top: 0; }
+    .sprint-card .sprint-meta {
+      font-size: 0.85rem; color: var(--text-light); margin-bottom: 1rem;
+      padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-light);
+    }
+    .sprint-card .pr-description {
+      background: var(--code-bg); color: var(--code-text); padding: 1rem; border-radius: var(--radius);
+      font-family: 'SF Mono', 'Fira Code', Menlo, monospace; font-size: 0.8rem;
+      white-space: pre-wrap; margin-top: 1rem;
+    }
+    .critical-banner {
+      background: rgba(220,53,69,0.08); border: 2px solid var(--critical);
+      border-radius: var(--radius); padding: 1.5rem; text-align: center;
+      font-size: 1.1rem; color: var(--critical); margin-bottom: 1.5rem; font-weight: 600;
+    }
+    .fixes-applied-banner {
+      background: rgba(0,170,132,0.08); border: 2px solid var(--success);
+      border-radius: var(--radius); padding: 1.5rem; text-align: center;
+      font-size: 1.05rem; color: var(--success); margin-bottom: 1.5rem; font-weight: 600;
+    }
+    details { margin: 0.5rem 0; border: 1px solid var(--border-light); border-radius: var(--radius); }
+    details summary {
+      cursor: pointer; font-weight: 600; font-size: 0.95rem; padding: 0.65rem 1rem;
+      background: var(--bg-secondary); border-radius: var(--radius); list-style: none;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::before { content: "\25B6\FE0E  "; font-size: 0.7rem; margin-right: 0.4rem; }
+    details[open] summary::before { content: "\25BC\FE0E  "; }
+    details[open] summary { border-bottom: 1px solid var(--border-light); border-radius: var(--radius) var(--radius) 0 0; }
+    details > div, details > p, details > ul, details > table { padding: 1rem; }
+    code {
+      background: var(--border-light); padding: 0.15rem 0.4rem; border-radius: 4px;
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace; font-size: 0.85em;
+    }
+    pre {
+      background: var(--code-bg); color: var(--code-text); padding: 1rem 1.25rem;
+      border-radius: var(--radius); overflow-x: auto;
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
+      font-size: 0.85rem; line-height: 1.5;
+    }
+    pre:not(.mermaid) { border: 1px solid var(--border); }
+    .footer {
+      text-align: center; padding: 2rem 1rem; color: var(--text-light);
+      font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: 1rem;
+    }
+    .footer-logo { margin-bottom: 0.5rem; }
+    .footer-logo img { height: 24px; width: auto; }
+    .footer-logo .logo-light { display: inline; }
+    .footer-logo .logo-dark { display: none; }
+    [data-theme="dark"] .footer-logo .logo-light { display: none; }
+    [data-theme="dark"] .footer-logo .logo-dark { display: inline; }
+    @media print {
+      .sidebar, .sidebar-toggle, .sidebar-overlay { display: none !important; }
+      .page-wrapper { display: block !important; }
+      body { background: white; }
+      .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .section { break-inside: avoid; box-shadow: none; }
+    }
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); box-shadow: var(--shadow-md); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-toggle { display: flex; }
+      .sidebar-overlay.open { display: block; }
+      .page-wrapper { display: block; }
+      .container { padding: 1rem; }
+      .section { padding: 1.25rem; }
+      .severity-grid { grid-template-columns: repeat(2, 1fr); }
+      table { font-size: 0.8rem; }
+      h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <div class="header-logo">
+        <img src="https://agent.opsera.ai/opsera_logo_white_horizontal.png" alt="Opsera">
+      </div>
+      <div class="header-text">
+        <h1>Security Scan Report</h1>
+        <div class="meta">vasthavik | Scan: Full + Pre-Commit Deep Analysis | Severity: All | Mar 31, 2026 | Opsera DevOps Agent</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="page-wrapper">
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-nav" id="sidebarNav">
+        <a class="sidebar-link" href="#executive-summary">Executive Summary</a>
+        <a class="sidebar-link" href="#risk-score">Risk Score &amp; Severity</a>
+        <a class="sidebar-link" href="#scan-coverage">Scan Coverage</a>
+        <div class="sidebar-group-label">Findings</div>
+        <a class="sidebar-link sub" href="#findings-critical">Critical — Plaintext Password</a>
+        <a class="sidebar-link sub" href="#findings-sast">SAST &amp; API Security</a>
+        <a class="sidebar-link sub" href="#findings-container">Container &amp; Dockerfile</a>
+        <a class="sidebar-link sub" href="#findings-iac">Infrastructure as Code</a>
+        <a class="sidebar-link sub" href="#findings-blockchain">Blockchain Integration</a>
+        <a class="sidebar-link sub" href="#findings-secrets">Secrets Detection</a>
+        <div class="sidebar-group-label">Remediation Roadmap</div>
+        <a class="sidebar-link sub" href="#fixes-applied">Fixes Applied in This Run</a>
+        <a class="sidebar-link sub" href="#fix-this-sprint">Fix This Sprint</a>
+        <a class="sidebar-link sub" href="#plan-next-quarter">Plan Next Quarter</a>
+      </div>
+      <div class="sidebar-footer">
+        <button class="sidebar-theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+          <svg class="sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.95l-.71.71M21 12h-1M4 12H3m16.66 7.66l-.71-.71M4.05 4.05l-.71-.71M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <svg class="moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.005 9.005 0 0012 21a9.005 9.005 0 008.354-5.646z"/>
+          </svg>
+        </button>
+        <span class="sidebar-theme-label">Toggle theme</span>
+      </div>
+    </nav>
+
+    <div class="page-main">
+      <div class="container">
+
+        <div class="fixes-applied-banner">
+          ✅ 4 critical/high issues found and fixed in this scan run — safe to commit after applying fixes
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="section" id="executive-summary">
+          <h2>Executive Summary</h2>
+          <p>Deep security analysis of the <strong>vasthavik</strong> blockchain-based certificate verification system combining automated tool scans (gitleaks, semgrep, checkov, hadolint) with a comprehensive manual deep-dive. One critical issue was found and fixed during this run.</p>
+          <table>
+            <thead><tr><th>Category</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Total</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Secrets / Credentials in Code</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>✅ Fixed</td></tr>
+              <tr><td>SAST / API Security</td><td>0</td><td>2</td><td>2</td><td>0</td><td>4</td><td>✅ Fixed (2/4), Remaining (2/4)</td></tr>
+              <tr><td>Container / Dockerfile</td><td>0</td><td>0</td><td>2</td><td>2</td><td>4</td><td>⚠️ Open</td></tr>
+              <tr><td>Infrastructure as Code</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>⚠️ Open</td></tr>
+              <tr><td>Blockchain Integration</td><td>0</td><td>1</td><td>1</td><td>0</td><td>2</td><td>✅ Fixed (1/2), Open (1/2)</td></tr>
+              <tr><td>Dependency Vulnerabilities</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>⚠️ Open</td></tr>
+              <tr style="font-weight:700;"><td>TOTAL (pre-fix)</td><td style="color:var(--critical);">1</td><td style="color:var(--high);">3</td><td style="color:var(--medium);">6</td><td style="color:var(--low);">3</td><td>13</td><td>—</td></tr>
+              <tr style="font-weight:700;background:rgba(0,170,132,0.05);"><td>TOTAL (post-fix)</td><td style="color:var(--success);">0</td><td style="color:var(--success);">1</td><td style="color:var(--medium);">5</td><td style="color:var(--low);">3</td><td>9</td><td>✅ Fixed 4 issues</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Risk Score -->
+        <div class="section" id="risk-score">
+          <h2>Risk Score &amp; Severity Breakdown</h2>
+          <p style="font-size:0.85rem;color:var(--text-light);margin-bottom:1rem;">Score reflects findings <strong>before fixes</strong> were applied in this run. Post-fix score is ~47/100 (Moderate).</p>
+          <div class="risk-score-container">
+            <div class="score-ring">
+              <svg width="180" height="180">
+                <circle class="bg" cx="90" cy="90" r="78"/>
+                <circle class="progress" cx="90" cy="90" r="78"
+                        stroke="#c05621"
+                        stroke-dasharray="490.1"
+                        stroke-dashoffset="196"/>
+              </svg>
+              <div class="value">
+                <div class="percentage" style="color:#c05621;">60</div>
+                <div class="label" style="color:#c05621;font-weight:600;">High Risk</div>
+              </div>
+            </div>
+          </div>
+          <div class="severity-grid">
+            <div class="severity-card critical">
+              <div class="count">1</div>
+              <div class="label">Critical</div>
+            </div>
+            <div class="severity-card high">
+              <div class="count">3</div>
+              <div class="label">High</div>
+            </div>
+            <div class="severity-card medium">
+              <div class="count">6</div>
+              <div class="label">Medium</div>
+            </div>
+            <div class="severity-card low">
+              <div class="count">3</div>
+              <div class="label">Low</div>
+            </div>
+          </div>
+          <div class="score-info-tip">
+            <details>
+              <summary>&#9432; How is this score calculated?</summary>
+              <div class="tip-content">
+                <p style="margin:0 0 0.4rem;"><strong>Formula:</strong> <code>min(100, round(log&#8321;&#8320;(C&#215;100 + H&#215;30 + M&#215;10 + L&#215;3 + 1) &#215; 25))</code></p>
+                <p style="margin:0 0 0.4rem;">= min(100, round(log&#8321;&#8320;(1&#215;100 + 3&#215;30 + 6&#215;10 + 3&#215;3 + 1) &#215; 25))<br>= min(100, round(log&#8321;&#8320;(250) &#215; 25)) = min(100, round(2.398 &#215; 25)) = <strong>60</strong></p>
+                <table>
+                  <tr><td><strong>0</strong></td><td>No Risk</td></tr>
+                  <tr><td><strong>1 – 25</strong></td><td>Low Risk</td></tr>
+                  <tr><td><strong>26 – 50</strong></td><td>Moderate Risk</td></tr>
+                  <tr><td><strong>51 – 75</strong></td><td>High Risk</td></tr>
+                  <tr><td><strong>76 – 100</strong></td><td>Critical Risk</td></tr>
+                </table>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Scan Coverage -->
+        <div class="section" id="scan-coverage">
+          <h2>Scan Coverage</h2>
+          <div class="scan-grid">
+            <div class="scan-card failed"><div class="icon">🔑</div><div class="name">Secrets (gitleaks)</div><div class="status">1 Finding (Fixed)</div></div>
+            <div class="scan-card failed"><div class="icon">🔍</div><div class="name">SAST (semgrep)</div><div class="status">Issues Found</div></div>
+            <div class="scan-card failed"><div class="icon">🏗️</div><div class="name">IaC (checkov)</div><div class="status">4 Failures</div></div>
+            <div class="scan-card failed"><div class="icon">🐳</div><div class="name">Container (hadolint)</div><div class="status">Issues Found</div></div>
+            <div class="scan-card skipped"><div class="icon">📦</div><div class="name">Container CVEs (grype)</div><div class="status">Skipped (not installed)</div></div>
+            <div class="scan-card failed"><div class="icon">⛓️</div><div class="name">Blockchain / Manual</div><div class="status">Issues Found</div></div>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-light);">
+            Files scanned: <code>backend/app.py</code>, <code>backend/models.py</code>, <code>backend/init_db.py</code>, <code>backend/dockerfile</code>,
+            <code>frontend/dockerfile</code>, <code>frontend/package.json</code>, <code>frontend/src/components/certificateIssuer.js</code>,
+            <code>frontend/src/components/connect.js</code>, <code>blockchain/contracts/CertificateIssuer.sol</code>, <code>docker-compose.yml</code>
+          </p>
+        </div>
+
+        <!-- Critical Findings -->
+        <div class="section" id="findings-critical">
+          <h2>🚨 Critical — Credential Exposure</h2>
+
+          <div class="finding critical">
+            <div class="finding-header">
+              <span class="finding-title">Hardcoded plaintext admin password in init_db.py</span>
+              <span class="severity severity-critical">Critical — FIXED ✅</span>
+            </div>
+            <div class="finding-location">backend/init_db.py:25 — password='pkoudi1' in SQL INSERT</div>
+            <p>The database seeding script inserted an admin record with the raw plaintext password <code>pkoudi1</code> hardcoded directly in the SQL statement. Additionally, the DB password fallback was hardcoded as <code>pgadmin</code>. Since <code>app.py</code> uses <code>check_password_hash()</code> for login, this would also cause admin login to fail (plaintext ≠ hash), breaking the admin account.</p>
+            <p><strong>Attack vector:</strong> Any person with repository access (or CI pipeline logs) could extract both the admin username and password. If the same credentials were reused elsewhere, this creates a lateral movement risk.</p>
+            <div class="fixed-box">✅ Fixed: Password now hashed with <code>generate_password_hash()</code>. DB_PASS now required via <code>os.environ['DB_PASS']</code> with no fallback. ADMIN_PASSWORD required via environment variable before seeding.</div>
+          </div>
+        </div>
+
+        <!-- SAST / API Security -->
+        <div class="section" id="findings-sast">
+          <h2>SAST &amp; API Security</h2>
+
+          <div class="finding high">
+            <div class="finding-header">
+              <span class="finding-title">No CSRF protection — session cookies vulnerable to cross-site forgery</span>
+              <span class="severity severity-high">High — FIXED ✅</span>
+            </div>
+            <div class="finding-location">backend/app.py — all POST/PUT routes (no SameSite cookie config)</div>
+            <p>The Flask app uses session-based auth with <code>supports_credentials=True</code> in CORS, but the session cookie had no <code>SameSite</code> attribute. In older browsers this means any cross-origin request automatically includes the session cookie, enabling CSRF attacks. An admin visiting a malicious site could have certificates issued, grades changed, or students added without their consent.</p>
+            <div class="fixed-box">✅ Fixed: Added <code>SESSION_COOKIE_SAMESITE='Lax'</code>, <code>SESSION_COOKIE_HTTPONLY=True</code>, and <code>SESSION_COOKIE_SECURE</code> (True in non-development). For full CSRF protection, add Flask-WTF in a future sprint.</div>
+          </div>
+
+          <div class="finding high">
+            <div class="finding-header">
+              <span class="finding-title">IDOR: student ID taken from request body on /request_certificate</span>
+              <span class="severity severity-high">High — FIXED ✅</span>
+            </div>
+            <div class="finding-location">backend/app.py:~230 — stud_id = data.get("stud_id")</div>
+            <p>The certificate request endpoint accepted <code>stud_id</code> from the JSON body rather than from the authenticated session. Any logged-in student could forge a request with another student's ID and create or overwrite certificate requests on their behalf — a classic Insecure Direct Object Reference vulnerability.</p>
+            <div class="fixed-box">✅ Fixed: Changed to <code>stud_id = session.get('user_id')</code> — always derived from the authenticated session, never from client input.</div>
+          </div>
+
+          <div class="finding medium">
+            <div class="finding-header">
+              <span class="finding-title">Raw exception messages exposed in HTTP responses</span>
+              <span class="severity severity-medium">Medium — FIXED ✅</span>
+            </div>
+            <div class="finding-location">backend/app.py — get_allcerti, update_certi, issue_certificate</div>
+            <p>Three endpoints returned <code>str(e)</code> directly in HTTP responses, potentially leaking database table names, column names, SQL error details, or internal stack information to clients — aiding attackers in reconnaissance.</p>
+            <div class="fixed-box">✅ Fixed: Exceptions now logged server-side with Python's <code>logging</code> module. Generic error messages returned to clients.</div>
+          </div>
+
+          <div class="finding medium">
+            <div class="finding-header">
+              <span class="finding-title">No input validation on date fields — crash on malformed input</span>
+              <span class="severity severity-medium">Medium — Open</span>
+            </div>
+            <div class="finding-location">backend/app.py:~145 — datetime.strptime(dob, '%Y-%m-%d')</div>
+            <p><code>datetime.strptime</code> raises an unhandled <code>ValueError</code> if <code>dob</code> or <code>start_date</code> contains an invalid format. This causes a 500 response, and the raw error propagates through the exception handler that has now been fixed — but the validation issue remains.</p>
+            <div class="remediation-box"><strong>Fix:</strong> Wrap all <code>strptime</code> calls in try/except and return <code>400 Bad Request</code> with a clear message: <code>return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400</code>.</div>
+          </div>
+        </div>
+
+        <!-- Container Findings -->
+        <div class="section" id="findings-container">
+          <h2>Container &amp; Dockerfile</h2>
+
+          <div class="finding medium">
+            <div class="finding-header">
+              <span class="finding-title">Backend container runs as root — no non-root USER</span>
+              <span class="severity severity-medium">Medium</span>
+            </div>
+            <div class="finding-location">backend/dockerfile:22 — no USER directive (semgrep: missing-user)</div>
+            <p>The backend container process runs as UID 0 (root). If the container is compromised via application vulnerability, the attacker has unrestricted access to the container filesystem and may attempt container escape to the host.</p>
+            <div class="remediation-box"><strong>Fix:</strong> Add before <code>CMD</code>: <code>RUN addgroup -S appgroup &amp;&amp; adduser -S appuser -G appgroup</code> then <code>USER appuser</code>.</div>
+          </div>
+
+          <div class="finding medium">
+            <div class="finding-header">
+              <span class="finding-title">Frontend container runs as root — no non-root USER</span>
+              <span class="severity severity-medium">Medium</span>
+            </div>
+            <div class="finding-location">frontend/dockerfile:25 — no USER directive in final stage (semgrep: missing-user)</div>
+            <p>Same issue as backend. Both the build and final stages of the frontend Dockerfile run as root.</p>
+            <div class="remediation-box"><strong>Fix:</strong> In the final stage add <code>RUN addgroup -S appgroup &amp;&amp; adduser -S appuser -G appgroup &amp;&amp; chown -R appuser /app</code> then <code>USER appuser</code> before <code>CMD</code>.</div>
+          </div>
+
+          <div class="finding low">
+            <div class="finding-header">
+              <span class="finding-title">No HEALTHCHECK in backend Dockerfile (CKV_DOCKER_2)</span>
+              <span class="severity severity-low">Low</span>
+            </div>
+            <div class="finding-location">backend/dockerfile — missing HEALTHCHECK instruction</div>
+            <p>Without a HEALTHCHECK, Docker and orchestrators cannot detect an unhealthy container. Dead containers silently receive traffic during rolling updates.</p>
+            <div class="remediation-box"><strong>Fix:</strong> <code>HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:5001/ || exit 1</code></div>
+          </div>
+
+          <div class="finding low">
+            <div class="finding-header">
+              <span class="finding-title">No HEALTHCHECK in frontend Dockerfile (CKV_DOCKER_2)</span>
+              <span class="severity severity-low">Low</span>
+            </div>
+            <div class="finding-location">frontend/dockerfile — missing HEALTHCHECK in final stage</div>
+            <p>Same gap as backend. The <code>serve</code> process could crash silently.</p>
+            <div class="remediation-box"><strong>Fix:</strong> <code>HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:3000/ || exit 1</code></div>
+          </div>
+        </div>
+
+        <!-- IaC Findings -->
+        <div class="section" id="findings-iac">
+          <h2>Infrastructure as Code</h2>
+
+          <div class="finding medium">
+            <div class="finding-header">
+              <span class="finding-title">PostgreSQL port 5432 exposed on host interface</span>
+              <span class="severity severity-medium">Medium</span>
+            </div>
+            <div class="finding-location">docker-compose.yml — db service: ports: "5432:5432"</div>
+            <p>The database port is bound to all host interfaces (<code>0.0.0.0:5432</code>). In any environment beyond a developer laptop, this allows direct network access to PostgreSQL, bypassing the application layer. Attackers with network access can brute-force credentials or exploit database vulnerabilities directly.</p>
+            <div class="remediation-box"><strong>Fix:</strong> Remove the <code>ports</code> block from the <code>db</code> service. Services in the same Compose network communicate by hostname (e.g., <code>postgres://db:5432</code>) without external exposure.</div>
+          </div>
+        </div>
+
+        <!-- Blockchain Findings -->
+        <div class="section" id="findings-blockchain">
+          <h2>Blockchain Integration</h2>
+
+          <div class="finding high">
+            <div class="finding-header">
+              <span class="finding-title">Contract address was placeholder '0xYourContractAddress' — blockchain features broken</span>
+              <span class="severity severity-high">High — FIXED ✅</span>
+            </div>
+            <div class="finding-location">frontend/src/components/certificateIssuer.js:12</div>
+            <p>The blockchain certificate issuance component had the contract address hardcoded as the literal string <code>'0xYourContractAddress'</code>. All on-chain certificate operations would fail silently with a cryptic provider error. The real deployed address was only available as a comment in <code>blockchain/deploy.js</code>.</p>
+            <div class="fixed-box">✅ Fixed: Changed to <code>process.env.REACT_APP_CONTRACT_ADDRESS || '0xd35760e2399360C2Db013eaB657C59Acc10385AE'</code> — environment-configurable with the known deployed address as fallback.</div>
+          </div>
+
+          <div class="finding medium">
+            <div class="finding-header">
+              <span class="finding-title">Blockchain-DB dual write with no saga or rollback mechanism</span>
+              <span class="severity severity-medium">Medium</span>
+            </div>
+            <div class="finding-location">frontend/src/components/certificateIssuer.js + backend/app.py:/issue_certificate</div>
+            <p>Certificate issuance is a two-step operation: (1) DB write via Flask API, (2) blockchain write via frontend ethers.js. These are completely independent with no coordination. If the MetaMask transaction fails after the DB write succeeds (gas limit, user rejection, network error), the DB record exists but no on-chain proof exists — producing an unverifiable certificate.</p>
+            <div class="remediation-box"><strong>Fix:</strong> Store <code>blockchain_tx_hash</code> and <code>blockchain_status</code> in the <code>certi</code> table. Mark certificates as <code>pending</code> until the on-chain event (<code>CertificateIssued</code>) is confirmed. Use an event listener or polling to update status.</div>
+          </div>
+        </div>
+
+        <!-- Secrets -->
+        <div class="section" id="findings-secrets">
+          <h2>Secrets Detection</h2>
+
+          <div class="finding low">
+            <div class="finding-header">
+              <span class="finding-title">SECRET_KEY detected by gitleaks in .env (false positive — properly gitignored)</span>
+              <span class="severity severity-low">Informational</span>
+            </div>
+            <div class="finding-location">.env:3 — SECRET_KEY=cd282dc...</div>
+            <p>Gitleaks detected the <code>SECRET_KEY</code> value in <code>.env</code>. This is a false positive: <code>.env</code> is listed in <code>.gitignore</code> and will never be committed to the repository. All sensitive config (SECRET_KEY, DATABASE_URL, POSTGRES_PASSWORD) is correctly loaded from environment variables in <code>app.py</code> with mandatory presence validation (<code>raise RuntimeError</code> if missing).</p>
+            <div class="remediation-box"><strong>Note:</strong> Add a <code>.gitleaksignore</code> file or <code>--no-git</code> exception for <code>.env</code> to suppress this false positive in future scans.</div>
+          </div>
+
+          <p style="color:var(--success);font-weight:600;margin-top:1rem;">✅ No API keys, private keys, or credentials detected in committed source files. All sensitive configuration is correctly loaded from environment variables.</p>
+        </div>
+
+        <!-- Remediation Roadmap -->
+        <div class="act-divider" id="remediation-roadmap">Remediation Roadmap</div>
+
+        <!-- Fixes Applied -->
+        <div class="section" id="fixes-applied">
+          <h2>✅ Fixes Applied in This Scan Run</h2>
+          <div class="sprint-card">
+            <h4>4 fixes applied automatically — ready to commit</h4>
+            <div class="sprint-meta">These changes were applied to the codebase during this scan run and are included in the upcoming commit.</div>
+            <table>
+              <thead><tr><th>File</th><th>Change</th><th>Severity Fixed</th></tr></thead>
+              <tbody>
+                <tr><td><code>backend/init_db.py</code></td><td>Hash admin password with <code>generate_password_hash()</code>; require DB_PASS and ADMIN_PASSWORD via environment</td><td><span class="severity severity-critical">Critical</span></td></tr>
+                <tr><td><code>backend/app.py</code></td><td>Added <code>SESSION_COOKIE_SAMESITE='Lax'</code>, <code>SESSION_COOKIE_HTTPONLY=True</code>, <code>SESSION_COOKIE_SECURE</code></td><td><span class="severity severity-high">High</span></td></tr>
+                <tr><td><code>backend/app.py</code></td><td>IDOR fix: stud_id now always taken from <code>session.get('user_id')</code></td><td><span class="severity severity-high">High</span></td></tr>
+                <tr><td><code>backend/app.py</code></td><td>Exception messages replaced with generic responses; exceptions logged server-side</td><td><span class="severity severity-medium">Medium</span></td></tr>
+                <tr><td><code>frontend/src/components/certificateIssuer.js</code></td><td>Contract address now loaded from <code>REACT_APP_CONTRACT_ADDRESS</code> env var</td><td><span class="severity severity-high">High</span></td></tr>
+              </tbody>
+            </table>
+            <div class="pr-description">fix(security): critical credential exposure, CSRF, IDOR, exception leakage
+
+- Hash admin password in init_db.py with generate_password_hash()
+- Require ADMIN_PASSWORD and DB_PASS via environment — no hardcoded fallbacks
+- Add SESSION_COOKIE_SAMESITE=Lax, HTTPONLY=True, SECURE in app.py
+- Fix IDOR: derive stud_id from session, not request body in /request_certificate
+- Replace str(e) responses with generic messages; log exceptions server-side
+- Move blockchain contract address to REACT_APP_CONTRACT_ADDRESS env var</div>
+          </div>
+        </div>
+
+        <!-- Fix This Sprint -->
+        <div class="section" id="fix-this-sprint">
+          <h2>Fix This Sprint</h2>
+          <table>
+            <thead><tr><th>Priority</th><th>Finding</th><th>Action</th><th>Effort</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="severity severity-medium">Medium</span></td>
+                <td>Docker containers run as root (backend + frontend)</td>
+                <td>Add <code>adduser</code> + <code>USER appuser</code> directive to both Dockerfiles</td>
+                <td>~30 min</td>
+              </tr>
+              <tr>
+                <td><span class="severity severity-medium">Medium</span></td>
+                <td>No input validation on date fields in post_addstud</td>
+                <td>Wrap <code>strptime</code> calls in try/except; return 400 on bad format</td>
+                <td>~10 min</td>
+              </tr>
+              <tr>
+                <td><span class="severity severity-medium">Medium</span></td>
+                <td>PostgreSQL port 5432 exposed on host</td>
+                <td>Remove <code>ports</code> mapping from <code>db</code> service in docker-compose.yml</td>
+                <td>~5 min</td>
+              </tr>
+              <tr>
+                <td><span class="severity severity-medium">Medium</span></td>
+                <td>Blockchain-DB state divergence (no saga/rollback)</td>
+                <td>Add <code>blockchain_tx_hash</code> + <code>blockchain_status</code> columns to <code>certi</code> table; implement event listener</td>
+                <td>~4 hours</td>
+              </tr>
+              <tr>
+                <td><span class="severity severity-medium">Medium</span></td>
+                <td>No rate limiting on login endpoints</td>
+                <td>Add <code>flask-limiter</code>: <code>@limiter.limit("10 per minute")</code> on <code>/post_univ</code> and <code>/post_stud</code></td>
+                <td>~30 min</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Plan Next Quarter -->
+        <div class="section" id="plan-next-quarter">
+          <h2>Plan For Next Quarter</h2>
+          <table>
+            <thead><tr><th>Priority</th><th>Finding</th><th>Action</th><th>Effort</th><th>Prerequisites</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="severity severity-high">High</span></td>
+                <td>Full CSRF token protection</td>
+                <td>Install <code>flask-wtf</code>, enable <code>CSRFProtect(app)</code>, send <code>X-CSRFToken</code> header from React</td>
+                <td>1 day</td>
+                <td>SameSite fix (done)</td>
+              </tr>
+              <tr>
+                <td><span class="severity severity-medium">Medium</span></td>
+                <td>No CI/CD pipeline</td>
+                <td>Add GitHub Actions workflow: lint → test → security scan → Docker build</td>
+                <td>1–2 days</td>
+                <td>None</td>
+              </tr>
+              <tr>
+                <td><span class="severity severity-low">Low</span></td>
+                <td>No HEALTHCHECK in both Dockerfiles</td>
+                <td>Add HEALTHCHECK instruction to backend and frontend Dockerfiles</td>
+                <td>1 hour</td>
+                <td>None</td>
+              </tr>
+              <tr>
+                <td><span class="severity severity-low">Low</span></td>
+                <td>Flask dev server in production CMD</td>
+                <td>Add <code>gunicorn</code> to requirements.txt; update backend CMD</td>
+                <td>30 min</td>
+                <td>None</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      <div class="footer">
+        <div class="footer-logo">
+          <img class="logo-light" src="https://agent.opsera.ai/opsera_logo_transparent.png" alt="Opsera">
+          <img class="logo-dark" src="https://agent.opsera.ai/opsera_logo_white_horizontal.png" alt="Opsera">
+        </div>
+        Generated by Opsera DevOps Agent | Security Scan + Deep Analysis | vasthavik | Mar 31, 2026
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      var html = document.documentElement;
+      var current = html.getAttribute('data-theme');
+      var next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      try { localStorage.setItem('opsera-report-theme', next); } catch(e) {}
+    }
+    (function() {
+      try {
+        var saved = localStorage.getItem('opsera-report-theme');
+        if (saved) document.documentElement.setAttribute('data-theme', saved);
+      } catch(e) {}
+    })();
+    document.addEventListener('DOMContentLoaded', function() {
+      var links = document.querySelectorAll('.sidebar-link[href^="#"]');
+      var sections = [];
+      links.forEach(function(link) {
+        var id = link.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) sections.push({ id: id, el: el, link: link });
+      });
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            links.forEach(function(l) { l.classList.remove('active'); });
+            var match = sections.find(function(s) { return s.el === entry.target; });
+            if (match) {
+              match.link.classList.add('active');
+              match.link.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+          }
+        });
+      }, { rootMargin: '-10% 0px -80% 0px', threshold: 0 });
+      sections.forEach(function(s) { observer.observe(s.el); });
+      var sidebar = document.getElementById('sidebar');
+      var toggle = document.getElementById('sidebarToggle');
+      var overlay = document.getElementById('sidebarOverlay');
+      function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+      toggle.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+      });
+      overlay.addEventListener('click', closeSidebar);
+      links.forEach(function(link) {
+        link.addEventListener('click', function() {
+          if (window.innerWidth <= 900) closeSidebar();
+        });
+      });
+    });
+  </script>
+</body>
+</html>

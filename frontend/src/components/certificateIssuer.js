@@ -9,8 +9,7 @@ const CertificateIssuer = () => {
     const [certificateData, setCertificateData] = useState(null);
     const [errorMessage, setErrorMessage] = useState('');
 
-    // Replace with your contract address
-    const contractAddress = '0xYourContractAddress'; 
+    const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS || '0xd35760e2399360C2Db013eaB657C59Acc10385AE';
 
     const issueCertificate = async () => {
         try {

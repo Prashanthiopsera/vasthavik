@@ -6,7 +6,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from functools import wraps
 import secrets
+import logging
 import os
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 app = Flask(__name__)
@@ -20,6 +24,9 @@ allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').spl
 CORS(app, supports_credentials=True, origins=allowed_origins)
 
 app.permanent_session_lifetime = timedelta(days=1)
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV', 'production') != 'development'
 
 database_url = os.environ.get('DATABASE_URL')
 if not database_url:
@@ -216,7 +223,8 @@ def get_allcerti():
         ]
         return jsonify(certi_list), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error("Error in get_allcerti: %s", e)
+        return jsonify({"error": "An internal error occurred. Please try again."}), 500
 
 
 @app.route('/request_certificate', methods=['POST'])
@@ -225,7 +233,7 @@ def request_certificate():
     if not request.is_json:
         return jsonify({"error": "JSON required"}), 400
     data = request.json
-    stud_id = data.get("stud_id")
+    stud_id = session.get('user_id')  # Always derive from session — never trust client
     univ_id = data.get("univ_id")
     program = data.get("program")
     reason = data.get("reason")
@@ -286,7 +294,8 @@ def update_certi(certificate_id):
         return jsonify({'message': 'Certificate updated successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'message': 'Error updating certificate', 'error': str(e)}), 500
+        logger.error("Error in update_certi: %s", e)
+        return jsonify({'message': 'Error updating certificate. Please try again.'}), 500
 
 
 @app.route('/issue_certificate', methods=['POST'])
@@ -320,7 +329,8 @@ def issue_certificate():
         }), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'message': 'Error issuing certificate', 'error': str(e)}), 500
+        logger.error("Error in issue_certificate: %s", e)
+        return jsonify({'message': 'Error issuing certificate. Please try again.'}), 500
 
 
 if __name__ == "__main__":

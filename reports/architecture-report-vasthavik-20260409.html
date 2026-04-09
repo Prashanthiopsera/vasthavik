@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="https://agent.opsera.ai/favicon.png">
+  <title>Architecture Report - vasthavik</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --primary: #9947EB;
+      --primary-hover: #8234d4;
+      --accent: #CF940C;
+      --bg: #ffffff;
+      --bg-secondary: #F3F3F1;
+      --card: #ffffff;
+      --card-hover: #fafafa;
+      --text: #3D3B36;
+      --text-light: #67788d;
+      --border: #E6E5E3;
+      --border-light: #f0efed;
+      --success: #00AA84;
+      --warning: #CF940C;
+      --danger: #dc3545;
+      --info: #1989F9;
+      --critical: #dc3545;
+      --high: #c05621;
+      --medium: #CF940C;
+      --low: #00AA84;
+      --code-bg: #1e1e2e;
+      --code-text: #cdd6f4;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+      --ring: #9947EB;
+      --radius: 0.5rem;
+      --diagram-bg: #ffffff;
+      --diagram-text: #1e293b;
+      --sidebar-width: 260px;
+    }
+    [data-theme="dark"] {
+      --primary: #b87aed;
+      --primary-hover: #a05ee0;
+      --accent: #F0B324;
+      --bg: #16181d;
+      --bg-secondary: #1e2028;
+      --card: #1e2028;
+      --card-hover: #262830;
+      --text: #f2f2f2;
+      --text-light: #a6a6a6;
+      --border: #2e3038;
+      --border-light: #262830;
+      --success: #00CC9E;
+      --warning: #F0B324;
+      --danger: #f06070;
+      --info: #4da6ff;
+      --critical: #f06070;
+      --high: #e89040;
+      --medium: #F0B324;
+      --low: #00CC9E;
+      --code-bg: #11111b;
+      --code-text: #cdd6f4;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+      --ring: #b87aed;
+      --diagram-bg: #1e2028;
+      --diagram-text: #e2e8f0;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.7;
+      -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s;
+    }
+    h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+    h2 { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.01em; color: var(--primary); }
+    h3 { font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-top: 1.25rem; margin-bottom: 0.5rem; }
+    h4 { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-top: 1rem; margin-bottom: 0.4rem; }
+    p { margin-bottom: 0.75rem; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { color: var(--primary-hover); text-decoration: underline; }
+    ul, ol { margin: 0.5rem 0 0.75rem 1.5rem; }
+    li { margin-bottom: 0.25rem; }
+
+    /* Page layout: header on top, sidebar + content below */
+    .page-wrapper { display: flex; min-height: calc(100vh - var(--header-height, 0px)); }
+    .header ~ .page-wrapper { --header-height: auto; }
+
+    /* Sidebar */
+    .sidebar {
+      position: sticky; top: 0; width: var(--sidebar-width); height: 100vh;
+      background: var(--card); border-right: 1px solid var(--border);
+      overflow-y: auto; z-index: 100; display: flex; flex-direction: column;
+      flex-shrink: 0; transition: background 0.3s, border-color 0.3s;
+    }
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 0.75rem 0; }
+    .sidebar-nav::-webkit-scrollbar { width: 3px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .sidebar-group-label {
+      padding: 0.6rem 1.25rem 0.3rem; font-size: 0.65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-light);
+    }
+    .sidebar-link {
+      display: block; padding: 0.35rem 1.25rem 0.35rem 1.25rem; font-size: 0.82rem;
+      color: var(--text-light); text-decoration: none; border-left: 3px solid transparent;
+      transition: all 0.15s ease; line-height: 1.4;
+    }
+    .sidebar-link:hover { color: var(--text); background: var(--bg-secondary); text-decoration: none; }
+    .sidebar-link.active {
+      color: var(--primary); border-left-color: var(--primary);
+      background: rgba(153,71,235,0.06); font-weight: 500;
+    }
+    [data-theme="dark"] .sidebar-link.active { background: rgba(184,122,237,0.08); }
+    .sidebar-link.sub { padding-left: 2rem; font-size: 0.78rem; }
+    .sidebar-footer {
+      padding: 0.75rem 1.25rem; border-top: 1px solid var(--border);
+      flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .sidebar-theme-btn {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: 999px; padding: 0.4rem; cursor: pointer;
+      display: flex; align-items: center; transition: all 0.2s;
+    }
+    .sidebar-theme-btn:hover { background: var(--card-hover); }
+    .sidebar-theme-btn svg { width: 16px; height: 16px; }
+    .sidebar-theme-btn .sun { display: none; color: var(--accent); }
+    .sidebar-theme-btn .moon { display: block; color: var(--text-light); }
+    [data-theme="dark"] .sidebar-theme-btn .sun { display: block; }
+    [data-theme="dark"] .sidebar-theme-btn .moon { display: none; }
+    .sidebar-theme-label { font-size: 0.75rem; color: var(--text-light); }
+
+    /* Mobile hamburger */
+    .sidebar-toggle {
+      display: none; position: fixed; top: 0.75rem; left: 0.75rem; z-index: 200;
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 0.5rem; cursor: pointer; box-shadow: var(--shadow-md);
+    }
+    .sidebar-toggle svg { width: 20px; height: 20px; color: var(--text); }
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 90;
+    }
+
+    /* Main content fills remaining width */
+    .page-main { flex: 1; min-width: 0; }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #250e3c 0%, #9947EB 60%, #CF940C 100%);
+      color: #ffffff; padding: 2.5rem 2rem; position: relative; overflow: hidden;
+    }
+    .header::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 70% 50%, rgba(153,71,235,0.3) 0%, transparent 70%);
+    }
+    .header-content {
+      max-width: 1100px; margin: 0 auto; display: flex;
+      align-items: center; gap: 1.5rem; position: relative; z-index: 1;
+    }
+    .header-logo { flex-shrink: 0; }
+    .header-logo img { height: 36px; width: auto; }
+    .header-text { flex: 1; }
+    .header h1 { color: #ffffff; margin-bottom: 0.4rem; }
+    .header .meta { opacity: 0.85; font-size: 0.875rem; font-weight: 400; }
+
+    /* Layout */
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .section {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem; margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm); transition: background 0.3s, border-color 0.3s;
+    }
+    .section h2 {
+      border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem; margin-bottom: 1.25rem;
+    }
+    .section-divider {
+      text-align: center; padding: 1.5rem 0; margin: 1rem 0;
+      font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-light);
+      border-top: 2px solid var(--border);
+    }
+
+    /* Cards */
+    .strength-card {
+      border-left: 4px solid var(--success); background: var(--bg-secondary);
+      padding: 1rem 1.25rem; margin-bottom: 1rem; border-radius: var(--radius);
+    }
+    .strength-card h4 { color: var(--success); margin: 0 0 0.25rem 0; font-size: 0.95rem; }
+    .strength-card p { margin: 0; font-size: 0.9rem; }
+    .badge-noted {
+      background: var(--border); color: var(--text-light); padding: 0.15rem 0.6rem;
+      border-radius: 4px; font-size: 0.75rem; font-weight: 600;
+    }
+    .contradiction-card {
+      border-left: 4px solid var(--danger); background: var(--bg-secondary);
+      padding: 1rem 1.25rem; margin-bottom: 1rem; border-radius: var(--radius);
+    }
+    .contradiction-card h4 { color: var(--danger); margin: 0 0 0.5rem 0; font-size: 0.95rem; }
+    .contradiction-card .config-pair {
+      display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.75rem;
+      align-items: center; margin: 0.5rem 0;
+    }
+    .contradiction-card .config-val {
+      background: var(--card); border: 1px solid var(--danger); border-radius: 4px;
+      padding: 0.5rem 0.75rem; font-family: monospace; font-size: 0.85rem; color: var(--text);
+    }
+    .contradiction-card .vs { color: var(--danger); font-weight: 700; font-size: 0.8rem; }
+    .stress-card {
+      border-left: 4px solid var(--warning); background: var(--bg-secondary);
+      padding: 1rem 1.25rem; margin-bottom: 1rem; border-radius: var(--radius);
+    }
+    .stress-card h4 { color: var(--warning); margin: 0 0 0.5rem 0; font-size: 0.95rem; }
+    .stress-tiers {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.5rem; margin: 0.75rem 0;
+    }
+    .stress-tier {
+      text-align: center; padding: 0.75rem 0.5rem; border-radius: var(--radius);
+      font-size: 0.8rem; font-weight: 600;
+    }
+    .stress-tier.current { background: rgba(0,170,132,0.15); color: var(--success); }
+    .stress-tier.warn { background: rgba(207,148,12,0.15); color: var(--warning); }
+    .stress-tier.danger { background: rgba(220,53,69,0.15); color: var(--danger); }
+    .stress-tier.critical { background: var(--danger); color: #fff; }
+    .stress-tier.catastrophic { background: #7f1d1d; color: #fff; }
+    .stress-tier.scaling { background: rgba(25,137,249,0.15); color: var(--info); }
+    .assumption-card {
+      border-left: 4px solid var(--primary); background: var(--bg-secondary);
+      padding: 1rem 1.25rem; margin-bottom: 1rem; border-radius: var(--radius);
+    }
+    .assumption-card h4 { color: var(--primary); margin: 0 0 0.25rem 0; font-size: 0.95rem; }
+    .assumption-card .scenario {
+      background: var(--border-light); border-radius: 4px; padding: 0.5rem 0.75rem;
+      margin-top: 0.5rem; font-size: 0.85rem; font-style: italic;
+    }
+    .coupling-card {
+      border-left: 4px solid #ec4899; background: var(--bg-secondary);
+      padding: 1rem 1.25rem; margin-bottom: 1rem; border-radius: var(--radius);
+    }
+    .coupling-card h4 { color: #ec4899; margin: 0 0 0.25rem 0; font-size: 0.95rem; }
+    .dead-path-card {
+      border-left: 4px solid var(--text-light); background: var(--bg-secondary);
+      padding: 1rem 1.25rem; margin-bottom: 1rem; border-radius: var(--radius);
+    }
+    .dead-path-card h4 { color: var(--text-light); margin: 0 0 0.25rem 0; font-size: 0.95rem; }
+
+    /* STRIDE Threat Model */
+    .stride-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr);
+      gap: 0.75rem; margin-bottom: 1.5rem;
+    }
+    .stride-card {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem 0.75rem; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .stride-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .stride-card.spoofing::before { background: var(--info); }
+    .stride-card.tampering::before { background: var(--high); }
+    .stride-card.repudiation::before { background: var(--text-light); }
+    .stride-card.info-disclosure::before { background: var(--critical); }
+    .stride-card.denial-of-service::before { background: var(--warning); }
+    .stride-card.elevation::before { background: var(--primary); }
+    .stride-icon {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;
+    }
+    .spoofing .stride-icon { background: var(--info); }
+    .tampering .stride-icon { background: var(--high); }
+    .repudiation .stride-icon { background: var(--text-light); }
+    .info-disclosure .stride-icon { background: var(--critical); }
+    .denial-of-service .stride-icon { background: var(--warning); }
+    .elevation .stride-icon { background: var(--primary); }
+    .stride-name { font-size: 0.75rem; font-weight: 600; margin-bottom: 0.15rem; }
+    .stride-count { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+    .stride-desc { font-size: 0.65rem; color: var(--text-light); }
+    .stride-detail { margin-bottom: 0.75rem; }
+    .stride-detail summary { font-size: 0.9rem; }
+    .stride-threat {
+      background: var(--bg-secondary); border-radius: var(--radius);
+      padding: 0.75rem 1rem; margin-bottom: 0.5rem;
+      border-left: 3px solid var(--border);
+    }
+    .stride-threat .threat-asset { font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.25rem; }
+    .stride-threat .threat-title { font-weight: 600; font-size: 0.9rem; }
+    .stride-threat .threat-controls {
+      display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem;
+    }
+    .countermeasure-badge {
+      display: inline-block; padding: 0.1rem 0.45rem; border-radius: 4px;
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 0.03em;
+      background: rgba(153,71,235,0.08); color: var(--primary);
+      border: 1px solid rgba(153,71,235,0.2);
+    }
+    @media (max-width: 768px) {
+      .stride-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .stride-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    thead th {
+      background: var(--primary); color: #ffffff;
+      padding: 0.65rem 0.75rem; text-align: left;
+      font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    tbody td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border-light); }
+    tbody tr:nth-child(even) { background: var(--bg-secondary); }
+    tbody tr:hover { background: var(--card-hover); }
+
+    /* Badges */
+    .badge {
+      display: inline-block; padding: 0.2rem 0.65rem; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.03em; vertical-align: middle;
+    }
+    .badge-critical { background: rgba(220,53,69,0.12); color: var(--critical); }
+    .badge-important { background: rgba(207,148,12,0.12); color: var(--medium); }
+    .badge-nice { background: rgba(0,170,132,0.12); color: var(--low); }
+    .badge-info { background: rgba(25,137,249,0.12); color: var(--info); }
+
+    /* Diagrams */
+    .diagram-container {
+      background: var(--diagram-bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.5rem 2rem; margin: 1.25rem 0; text-align: center;
+      overflow-x: auto; cursor: pointer; position: relative; transition: box-shadow 0.2s ease;
+    }
+    .diagram-container:hover { box-shadow: var(--shadow-md); }
+    .diagram-container h4 { text-align: left; margin-bottom: 0.75rem; }
+    .diagram-container .zoom-hint {
+      position: absolute; top: 0.75rem; right: 0.75rem; font-size: 0.7rem;
+      color: var(--text-light); background: var(--border-light);
+      padding: 0.2rem 0.5rem; border-radius: 4px; opacity: 0; transition: opacity 0.2s ease;
+    }
+    .diagram-container:hover .zoom-hint { opacity: 1; }
+    pre.mermaid { background: var(--diagram-bg) !important; color: var(--diagram-text) !important; border: none !important; padding: 0.75rem; margin: 0.5rem 0; }
+    .mermaid svg { max-width: 100%; height: auto; min-height: 300px; background: var(--diagram-bg); }
+    .diagram-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85); z-index: 9999;
+      justify-content: center; align-items: center; padding: 2rem; cursor: zoom-out;
+    }
+    .diagram-overlay.active { display: flex; }
+    .diagram-overlay-content {
+      background: var(--card); border-radius: 12px; padding: 2rem;
+      max-width: 95vw; max-height: 90vh; overflow: auto; position: relative;
+    }
+    .diagram-overlay-content svg { max-width: none; width: 100%; height: auto; min-height: 500px; }
+    .diagram-overlay-close {
+      position: absolute; top: 0.75rem; right: 1rem; font-size: 1.5rem;
+      color: var(--text-light); cursor: pointer; background: none; border: none; line-height: 1;
+    }
+    .diagram-overlay-close:hover { color: var(--text); }
+
+    /* Risk score ring */
+    .risk-score-container {
+      display: flex; align-items: center; justify-content: center;
+      gap: 3rem; padding: 2rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 1.5rem;
+    }
+    .score-ring { position: relative; width: 180px; height: 180px; }
+    .score-ring svg { transform: rotate(-90deg); }
+    .score-ring circle { fill: none; stroke-width: 12; }
+    .score-ring .bg { stroke: var(--border); }
+    .score-ring .progress { stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+    .score-ring .value {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%); text-align: center;
+    }
+    .score-ring .percentage { font-size: 2.5rem; font-weight: 700; }
+    .score-ring .label { color: var(--text-light); font-size: 0.875rem; }
+    .score-info-tip {
+      text-align: center; margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-light);
+    }
+    .score-info-tip summary {
+      cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem;
+      font-weight: 500; color: var(--text-light); user-select: none;
+    }
+    .score-info-tip summary:hover { color: var(--text); }
+    .score-info-tip .tip-content {
+      margin-top: 0.5rem; padding: 0.75rem 1rem; background: var(--bg-secondary);
+      border: 1px solid var(--border); border-radius: var(--radius); text-align: left;
+      display: inline-block; max-width: 520px;
+    }
+    .score-info-tip .tip-content code {
+      background: var(--border-light); padding: 0.15rem 0.35rem; border-radius: 3px;
+      font-size: 0.78rem;
+    }
+    .score-info-tip .tip-content table { margin-top: 0.5rem; font-size: 0.78rem; }
+    .score-info-tip .tip-content td { padding: 0.2rem 0.6rem; }
+
+    /* Severity cards */
+    .severity-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .severity-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem; text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .severity-card .count { font-size: 2.5rem; font-weight: 700; }
+    .severity-card .sev-label { color: var(--text-light); font-size: 0.8rem; margin-top: 0.25rem; }
+    .severity-card.critical .count { color: var(--critical); }
+    .severity-card.high .count { color: var(--high); }
+    .severity-card.medium .count { color: var(--medium); }
+    .severity-card.low .count { color: var(--low); }
+
+    /* Category breakdown */
+    .category-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem; margin-bottom: 1.5rem;
+    }
+    .category-card {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem; text-align: center;
+    }
+    .category-card .cat-icon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .category-card .cat-name { font-size: 0.8rem; font-weight: 600; }
+    .category-card .cat-count { font-size: 1.75rem; font-weight: 700; color: var(--primary); margin: 0.25rem 0; }
+    .category-card .cat-breakdown { font-size: 0.7rem; color: var(--text-light); }
+
+    .attack-complexity {
+      display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em; vertical-align: middle;
+    }
+    .ac-none { background: rgba(220,53,69,0.12); color: var(--critical); }
+    .ac-low { background: rgba(207,148,12,0.12); color: var(--medium); }
+    .ac-medium { background: rgba(25,137,249,0.12); color: var(--info); }
+    .ac-high { background: rgba(0,170,132,0.12); color: var(--success); }
+
+    /* Sprint / remediation */
+    .sprint-card {
+      border: 2px solid var(--success); border-radius: var(--radius); padding: 1.5rem;
+      margin: 1rem 0; background: var(--bg-secondary);
+    }
+    .sprint-card h4 { color: var(--success); margin-top: 0; }
+    .sprint-card .sprint-meta {
+      font-size: 0.85rem; color: var(--text-light); margin-bottom: 1rem;
+      padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-light);
+    }
+    .sprint-card .pr-description {
+      background: var(--code-bg); color: var(--code-text); padding: 1rem; border-radius: var(--radius);
+      font-family: 'SF Mono', 'Fira Code', Menlo, monospace; font-size: 0.8rem;
+      white-space: pre-wrap; margin-top: 1rem;
+    }
+    .inaction-cost {
+      background: var(--bg-secondary); border-left: 3px solid var(--danger); padding: 0.75rem 1rem;
+      margin: 0.5rem 0; border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.9rem;
+    }
+    .inaction-cost strong { color: var(--danger); }
+    .decision-card {
+      border: 2px solid var(--primary); border-radius: var(--radius); padding: 1.5rem;
+      margin: 1rem 0; background: var(--bg-secondary);
+    }
+    .decision-card h4 { color: var(--primary); margin-top: 0; }
+    .option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .option-card {
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem;
+      background: var(--card);
+    }
+    .option-card h5 { font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .risk-indicator {
+      display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+      margin-right: 0.4rem; vertical-align: middle;
+    }
+    .risk-critical { background: var(--danger); }
+    .risk-high { background: var(--warning); }
+    .risk-medium { background: var(--info); }
+    .risk-low { background: var(--success); }
+
+    /* Collapsible */
+    details { margin: 0.5rem 0; border: 1px solid var(--border-light); border-radius: var(--radius); }
+    details summary {
+      cursor: pointer; font-weight: 600; font-size: 0.95rem; padding: 0.65rem 1rem;
+      background: var(--bg-secondary); border-radius: var(--radius); list-style: none;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::before { content: "\25B6\FE0E  "; font-size: 0.7rem; margin-right: 0.4rem; }
+    details[open] summary::before { content: "\25BC\FE0E  "; }
+    details[open] summary { border-bottom: 1px solid var(--border-light); border-radius: var(--radius) var(--radius) 0 0; }
+    details > div, details > p, details > ul, details > table { padding: 1rem; }
+
+    /* Code */
+    code {
+      background: var(--border-light); padding: 0.15rem 0.4rem; border-radius: 4px;
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace; font-size: 0.85em;
+    }
+    pre {
+      background: var(--code-bg); color: var(--code-text); padding: 1rem 1.25rem;
+      border-radius: var(--radius); overflow-x: auto;
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
+      font-size: 0.85rem; line-height: 1.5;
+    }
+    pre:not(.mermaid) { border: 1px solid var(--border); }
+
+    /* Footer */
+    .footer {
+      text-align: center; padding: 2rem 1rem; color: var(--text-light);
+      font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: 1rem;
+    }
+    .footer-logo { margin-bottom: 0.5rem; }
+    .footer-logo img { height: 24px; width: auto; }
+    .footer-logo .logo-light { display: inline; }
+    .footer-logo .logo-dark { display: none; }
+    [data-theme="dark"] .footer-logo .logo-light { display: none; }
+    [data-theme="dark"] .footer-logo .logo-dark { display: inline; }
+
+    @media print {
+      .sidebar, .sidebar-toggle, .sidebar-overlay { display: none !important; }
+      .page-wrapper { display: block !important; }
+      body { background: white; }
+      .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .section { break-inside: avoid; box-shadow: none; }
+      .no-print { display: none !important; }
+    }
+    @media (max-width: 900px) {
+      .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); box-shadow: var(--shadow-md); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-toggle { display: flex; }
+      .sidebar-overlay.open { display: block; }
+      .page-wrapper { display: block; }
+      .container { padding: 1rem; }
+      .section { padding: 1.25rem; }
+      .option-grid { grid-template-columns: 1fr; }
+      .severity-grid { grid-template-columns: repeat(2, 1fr); }
+      table { font-size: 0.8rem; }
+      h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header (full-width, above sidebar) -->
+  <div class="header">
+    <div class="header-content">
+      <div class="header-logo">
+        <img src="https://agent.opsera.ai/opsera_logo_white_horizontal.png" alt="Opsera">
+      </div>
+      <div class="header-text">
+        <h1>Architecture Report</h1>
+        <div class="meta">Project: vasthavik | Generated: April 9, 2026 | Opsera DevOps Agent</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile toggle -->
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="page-wrapper">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-nav" id="sidebarNav">
+        <a class="sidebar-link" href="#executive-summary">Executive Summary</a>
+
+        <div class="sidebar-group-label">Architecture at a Glance</div>
+        <a class="sidebar-link sub" href="#architecture-diagrams">Architecture Diagrams</a>
+        <a class="sidebar-link sub" href="#tech-stack">Technology Stack</a>
+        <a class="sidebar-link sub" href="#quantitative">Quantitative Profile</a>
+
+        <div class="sidebar-group-label">What Works Well</div>
+        <a class="sidebar-link sub" href="#strengths">Strengths</a>
+
+        <div class="sidebar-group-label">Risk Landscape</div>
+        <a class="sidebar-link sub" href="#risk-score">Risk Score &amp; Severity</a>
+        <a class="sidebar-link sub" href="#category-breakdown">Issues by Category</a>
+        <a class="sidebar-link sub" href="#stride-threat-model">STRIDE Threat Model</a>
+        <a class="sidebar-link sub" href="#findings-basic">Basic Issues</a>
+        <a class="sidebar-link sub" href="#findings-advanced">Advanced Issues</a>
+
+        <div class="sidebar-group-label">Deep Insights</div>
+        <a class="sidebar-link sub" href="#config-contradictions">Config Contradictions</a>
+        <a class="sidebar-link sub" href="#stress-projection">Stress Projection</a>
+        <a class="sidebar-link sub" href="#implicit-contracts">Implicit Contracts</a>
+        <a class="sidebar-link sub" href="#behavioral-coupling">Behavioral Coupling</a>
+        <a class="sidebar-link sub" href="#dead-paths">Dead Paths</a>
+
+        <div class="sidebar-group-label">Remediation Roadmap</div>
+        <a class="sidebar-link sub" href="#quick-wins">Quick Wins</a>
+        <a class="sidebar-link sub" href="#fix-this-sprint">Fix This Sprint</a>
+        <a class="sidebar-link sub" href="#plan-next-quarter">Plan Next Quarter</a>
+        <a class="sidebar-link sub" href="#decisions">Decisions</a>
+        <a class="sidebar-link sub" href="#risk-mitigations">Risk Mitigations</a>
+      </div>
+      <div class="sidebar-footer">
+        <button class="sidebar-theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+          <svg class="sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.95l-.71.71M21 12h-1M4 12H3m16.66 7.66l-.71-.71M4.05 4.05l-.71-.71M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <svg class="moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.005 9.005 0 0012 21a9.005 9.005 0 008.354-5.646z"/>
+          </svg>
+        </button>
+        <span class="sidebar-theme-label">Toggle theme</span>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="page-main">
+      <div class="container">
+
+      <!-- Executive Summary -->
+      <div class="section" id="executive-summary">
+        <h2>Executive Summary</h2>
+        <p><strong>vasthavik</strong> is a blockchain-based academic certificate management system built as a monorepo. It comprises a <strong>Flask 3.0 REST API</strong> backed by <strong>PostgreSQL (AWS RDS)</strong>, a <strong>React 18 SPA</strong>, and an <strong>Ethereum Solidity smart contract</strong> (CertificateIssuer) deployed on Sepolia testnet. The system is containerized and deployed to <strong>AWS EKS</strong> via a <strong>GitOps flow with ArgoCD</strong>.</p>
+        <p>The architecture analysis identified <strong>1 critical</strong>, <strong>5 high</strong>, and <strong>3 medium</strong> issues. The most urgent blocker is a missing <code>/health</code> endpoint in the Flask backend — the Kubernetes probes check this route and will crash-loop every pod on the next deployment. The CI/CD pipeline is also incomplete: it builds Docker images but never pushes them to ECR or updates the GitOps kustomization, so no code changes are ever deployed automatically.</p>
+        <p>The good news: the auth architecture is well-structured with proper decorator-based enforcement, secrets are managed via Kubernetes Secrets (not hardcoded), and the Solidity contract itself has solid access control with authorized-issuer management. These are strong foundations to build on.</p>
+        <table>
+          <thead><tr><th>Severity</th><th>Count</th><th>Headline Finding</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-critical">Critical</span></td><td>1</td><td>Missing /health endpoint — pods crash-loop on every deploy</td></tr>
+            <tr><td><span class="badge" style="background:rgba(192,86,33,0.12);color:var(--high);">High</span></td><td>5</td><td>CI/CD never deploys, CORS default blocks prod, no rate limiting, SPOF replicas, cert state drift</td></tr>
+            <tr><td><span class="badge badge-important">Medium</span></td><td>3</td><td>Gas limit DoS on getAllCertificates(), no test suite, bus factor=1</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Overall Risk Score: 61/100 (High Risk).</strong> The system cannot safely be deployed without fixing the /health endpoint. All high-severity issues should be resolved within one sprint.</p>
+      </div>
+
+      <!-- SECTION 1: Architecture at a Glance -->
+      <div class="section-divider" id="section1">Architecture at a Glance</div>
+      <div class="section" id="architecture-diagrams">
+        <h2>Architecture Diagrams</h2>
+        <p>Click any diagram to zoom in.</p>
+
+        <div class="diagram-container">
+          <h4>1. System Architecture Overview</h4>
+          <pre class="mermaid">graph TB
+    subgraph Client["Client Zone"]
+      Browser["Browser\nReact 18 SPA\n(Port 3000)"]
+      MetaMask["MetaMask\nWallet Extension"]
+    end
+    subgraph EKS["AWS EKS — vasthavik-dev namespace"]
+      Frontend["frontend Pod\nnginx + React build\n1 replica — SPOF"]
+      Backend["backend Pod\nFlask 3.0 API\nPort 5001\n1 replica — SPOF"]
+    end
+    subgraph AWS["AWS Services"]
+      ECR["ECR\nContainer Registry"]
+      RDS["RDS PostgreSQL\nPort 5432"]
+    end
+    subgraph Blockchain["Ethereum Sepolia Testnet"]
+      Contract["CertificateIssuer.sol\n0xd35760e2..."]
+    end
+    subgraph GitOps["GitOps — ArgoCD"]
+      ArgoCD["ArgoCD\nargocd.agents.opsera-labs.com"]
+      Kustomization["k8s/overlays/dev/\nkustomization.yaml"]
+    end
+
+    Browser -->|"HTTPS + Cookie\n~200ms"| Frontend
+    Browser -->|"CORS: localhost:3000 default\n⚠️ BLOCKED IN PROD"| Backend
+    MetaMask -->|"JSON-RPC HTTPS\nSepolia RPC"| Contract
+    Frontend -->|"ClusterIP\nPort 5001"| Backend
+    Backend -->|"SQLAlchemy\nPool: default 5"| RDS
+    ArgoCD -->|"git sync\nevery 3min"| Kustomization
+    Kustomization -->|"apply"| EKS
+    ECR -->|"imagePull"| Frontend
+    ECR -->|"imagePull"| Backend</pre>
+        </div>
+
+        <div class="diagram-container">
+          <h4>2. Auth / Security Enforcement Map</h4>
+          <pre class="mermaid">graph TD
+    subgraph Public["Public Routes — No Auth Required"]
+      R1["POST /post_univ\nAdmin Login\n⚠️ No rate limit"]
+      R2["POST /post_stud\nStudent Login\n⚠️ No rate limit"]
+      R3["POST /logout"]
+    end
+    subgraph AuthRequired["@require_auth — Session Cookie Required"]
+      R4["POST /request_certificate\nStudent only"]
+    end
+    subgraph AdminRequired["@require_admin — role='admin' Required"]
+      R5["POST /post_addstud"]
+      R6["GET /student_all"]
+      R7["GET /get_allcerti"]
+      R8["PUT /update_certi/:id"]
+      R9["POST /issue_certificate"]
+    end
+    subgraph SessionStore["Session Storage"]
+      Mem["In-Memory Flask Sessions\n⚠️ Lost on pod restart\n⚠️ No sharing across replicas"]
+    end
+
+    R1 -->|"Sets session user_id + role='admin'"| Mem
+    R2 -->|"Sets session user_id + role='student'"| Mem
+    Mem -->|"Reads user_id"| R4
+    Mem -->|"Reads user_id + role"| R5
+    Mem -->|"Reads user_id + role"| R6
+    Mem -->|"Reads user_id + role"| R7
+    Mem -->|"Reads user_id + role"| R8
+    Mem -->|"Reads user_id + role"| R9
+
+    classDef danger fill:#dc354520,stroke:#dc3545,color:#dc3545
+    classDef safe fill:#00AA8420,stroke:#00AA84,color:#00AA84
+    classDef warn fill:#CF940C20,stroke:#CF940C,color:#CF940C
+    class R1,R2 warn
+    class R4,R5,R6,R7,R8,R9 safe
+    class Mem danger</pre>
+        </div>
+
+        <div class="diagram-container">
+          <h4>3. Data Flow — Certificate Lifecycle</h4>
+          <pre class="mermaid">graph TB
+    Student["Student Browser"]
+    Admin["Admin Browser"]
+    FlaskAPI["Flask API\nPort 5001"]
+    DB["PostgreSQL RDS\nPort 5432"]
+    Blockchain["Ethereum Sepolia\nCertificateIssuer.sol"]
+
+    Student -->|"POST /request_certificate\nJSON body: univ_id, program, reason"| FlaskAPI
+    FlaskAPI -->|"INSERT INTO certi\nstatus='Pending'"| DB
+    Admin -->|"GET /get_allcerti\nAdmin role required"| FlaskAPI
+    FlaskAPI -->|"SELECT WHERE status='Pending'"| DB
+    Admin -->|"PUT /update_certi/:id\ngrade + status"| FlaskAPI
+    FlaskAPI -->|"UPDATE certi SET grade, status"| DB
+    Admin -->|"POST /issue_certificate\ngrade + stud_id"| FlaskAPI
+    FlaskAPI -->|"INSERT INTO certi\nstatus='Issued'"| DB
+
+    Admin -->|"Direct MetaMask TX\n⚠️ SEPARATE from API"| Blockchain
+    Blockchain -->|"No callback to API\n⚠️ STATE DRIFT"| Blockchain
+
+    Student -->|"GET certificate on-chain"| Blockchain
+
+    classDef danger fill:#dc354520,stroke:#dc3545,color:#dc3545
+    class Blockchain danger</pre>
+        </div>
+
+        <div class="diagram-container">
+          <h4>4. Failure Mode Map — What Breaks When X Dies</h4>
+          <pre class="mermaid">graph TD
+    subgraph Failures["Failure Scenarios"]
+      F1["Backend Pod Crashes\n(replicas: 1)"]
+      F2["RDS Goes Down"]
+      F3["Ethereum RPC Down"]
+      F4["Health Check Fails\n(/health missing)"]
+      F5["ArgoCD Sync Fails"]
+    end
+    subgraph Effects["Impact"]
+      E1["100% API Outage\nNo fallback pod\nDowntime until restart"]
+      E2["All DB operations fail\nCertificate requests lost\nApp shows 500 errors"]
+      E3["Blockchain verify broken\nOn-chain issuance fails\nDB issuance still works"]
+      E4["Pod never passes readiness\nK8s marks NotReady\nCrashLoopBackOff"]
+      E5["Stale images run\nCode changes not deployed\nSilent failure"]
+    end
+
+    F1 --> E1
+    F2 --> E2
+    F3 --> E3
+    F4 --> E4
+    F5 --> E5
+
+    classDef critical fill:#dc354520,stroke:#dc3545,color:#dc3545
+    classDef high fill:#CF940C20,stroke:#CF940C,color:#CF940C
+    class E1,E4 critical
+    class E2,E5 high</pre>
+        </div>
+
+        <div class="diagram-container">
+          <h4>5. Security Defense-in-Depth</h4>
+          <pre class="mermaid">graph TB
+    L1["🌐 Perimeter\nHTTPS ✅ | WAF ❌ | DDoS protection ❌"]
+    L2["🔗 Network\nClusterIP isolation ✅ | Network policies ❌ | mTLS ❌"]
+    L3["📦 Container\nNon-root user ✅ | seccomp ❌ | ReadOnly FS ❌"]
+    L4["🔑 Authentication\nSession cookies ✅ | Rate limiting ❌ | MFA ❌"]
+    L5["🛡️ Authorization\n@require_admin ✅ | RBAC K8s ❌ | Audit log ❌"]
+    L6["💾 Data\nK8s Secrets ✅ | Encryption at rest ❓ | PII handling ❓"]
+    L7["📊 Monitoring\nFlask logging ✅ | APM ❌ | Alerts ❌ | SIEM ❌"]
+
+    L1 --> L2 --> L3 --> L4 --> L5 --> L6 --> L7
+
+    classDef good fill:#00AA8420,stroke:#00AA84,color:#00AA84
+    classDef bad fill:#dc354520,stroke:#dc3545,color:#dc3545
+    classDef mix fill:#CF940C20,stroke:#CF940C,color:#CF940C</pre>
+        </div>
+
+        <div class="diagram-container">
+          <h4>6. CI/CD Pipeline &amp; Deployment Flow</h4>
+          <pre class="mermaid">graph LR
+    Push["git push main"] --> GHA["GitHub Actions\nci-cd-vasthavik.yaml"]
+    GHA --> BuildB["Build Backend\nDocker image ✅"]
+    GHA --> BuildF["Build Frontend\nDocker image ✅"]
+    GHA --> LintB["Lint Backend\nflake8 (continue-on-error) ✅"]
+    GHA --> LintF["Lint Frontend\nnpm lint ✅"]
+
+    BuildB --> MISSING["❌ ECR Push MISSING\nImage never uploaded"]
+    BuildF --> MISSING
+    MISSING --> KUST["❌ kustomization.yaml\nNEVER UPDATED"]
+    KUST --> ArgoCD["ArgoCD watches\nk8s/overlays/dev/\n(sees no change)"]
+    ArgoCD --> EKS["EKS: Stale images\nrun indefinitely"]
+
+    classDef danger fill:#dc354520,stroke:#dc3545,color:#dc3545
+    classDef safe fill:#00AA8420,stroke:#00AA84,color:#00AA84
+    class MISSING,KUST danger
+    class BuildB,BuildF,LintB,LintF safe</pre>
+        </div>
+
+        <div class="diagram-container">
+          <h4>7. Request Lifecycle — Student Certificate Request</h4>
+          <pre class="mermaid">sequenceDiagram
+    participant Browser as Browser
+    participant Flask as Flask API (5001)
+    participant Session as Session Store
+    participant DB as PostgreSQL RDS
+
+    Browser->>Flask: POST /post_stud {username, password}
+    Flask->>DB: SELECT * FROM stud WHERE username=?
+    DB-->>Flask: Student record
+    Flask->>Flask: check_password_hash()
+    Flask->>Session: Set user_id, role='student'
+    Flask-->>Browser: 200 + student data (no password)
+
+    Note over Browser,Flask: Authenticated — SameSite=Lax cookie sent
+
+    Browser->>Flask: POST /request_certificate {univ_id, program, reason}
+    Flask->>Session: Read user_id (never trust client)
+    Session-->>Flask: user_id = 42
+    Flask->>DB: INSERT/UPDATE certi WHERE stud_id=42
+    DB-->>Flask: certi_id = 101
+    Flask-->>Browser: 201 {cert_id: 101}
+
+    Note over Browser,DB: ⚠️ Blockchain NOT called — separate MetaMask flow</pre>
+        </div>
+
+        <div class="diagram-container">
+          <h4>8. Module Dependency Graph</h4>
+          <pre class="mermaid">graph TD
+    subgraph Backend["backend/"]
+      AppPy["app.py\n~337 lines\n8 routes\nGOD MODULE"]
+      Models["models.py\nAdmin, Stud, Certi"]
+      InitDB["init_db.py"]
+    end
+    subgraph Frontend["frontend/src/"]
+      AppJs["App.js\nRouter"]
+      Connect["connect.js\nMetaMask SDK"]
+      ContractABI["contractabi/contractabi.js\nABI definition"]
+      Components["components/\n12 React components"]
+    end
+    subgraph Blockchain["blockchain/"]
+      Contract["CertificateIssuer.sol"]
+      Deploy["deploy.js"]
+      HardhatCfg["hardhat.config.js\nSepolia config"]
+    end
+
+    AppPy -->|"imports"| Models
+    AppPy -->|"Flask, CORS, SQLAlchemy\nWorkzeug, secrets"| AppPy
+    InitDB -->|"imports"| Models
+    AppJs --> Components
+    Components --> Connect
+    Connect -->|"MetaMask SDK"| Connect
+    ContractABI -->|"used by"| Components
+    Deploy -->|"deploys"| Contract
+    HardhatCfg -->|"PRIVATE_KEY from .env"| Deploy
+
+    classDef hotspot fill:#9947EB20,stroke:#9947EB,color:#9947EB
+    class AppPy hotspot</pre>
+        </div>
+      </div>
+      <div class="section" id="tech-stack">
+        <h2>Technology Stack</h2>
+        <table>
+          <thead><tr><th>Component</th><th>Technology</th><th>Version</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr><td>Backend Framework</td><td>Flask</td><td>3.0.0</td><td>backend/requirements.txt</td></tr>
+            <tr><td>Backend Language</td><td>Python</td><td>3.11</td><td>backend/dockerfile</td></tr>
+            <tr><td>ORM</td><td>SQLAlchemy + Flask-SQLAlchemy</td><td>2.0.23 (unpinned wrapper)</td><td>backend/requirements.txt</td></tr>
+            <tr><td>Auth / Passwords</td><td>Werkzeug + Flask sessions</td><td>3.0.1</td><td>backend/requirements.txt</td></tr>
+            <tr><td>CORS</td><td>Flask-CORS</td><td>5.0.0</td><td>backend/requirements.txt</td></tr>
+            <tr><td>Frontend Framework</td><td>React</td><td>18.x</td><td>frontend/package.json</td></tr>
+            <tr><td>Blockchain Runtime</td><td>Solidity</td><td>0.8.27</td><td>blockchain/hardhat.config.js</td></tr>
+            <tr><td>Blockchain Dev</td><td>Hardhat</td><td>latest</td><td>blockchain/package.json</td></tr>
+            <tr><td>Blockchain Network</td><td>Ethereum Sepolia Testnet</td><td>—</td><td>blockchain/hardhat.config.js</td></tr>
+            <tr><td>Database</td><td>PostgreSQL (AWS RDS)</td><td>managed</td><td>DEPLOYMENT-CONTEXT.md</td></tr>
+            <tr><td>Container Orchestration</td><td>Kubernetes (AWS EKS)</td><td>managed</td><td>k8s/</td></tr>
+            <tr><td>GitOps</td><td>ArgoCD</td><td>—</td><td>gitops/argocd/application.yaml</td></tr>
+            <tr><td>CI/CD</td><td>GitHub Actions</td><td>—</td><td>.github/workflows/ci-cd-vasthavik.yaml</td></tr>
+            <tr><td>Container Registry</td><td>AWS ECR</td><td>managed</td><td>DEPLOYMENT-CONTEXT.md</td></tr>
+            <tr><td>Wallet Integration</td><td>MetaMask SDK</td><td>—</td><td>frontend/src/components/connect.js</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="section" id="quantitative">
+        <h2>Quantitative Profile</h2>
+        <table>
+          <thead><tr><th>Metric</th><th>Value</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr><td>Total Lines of Code</td><td>~5,000</td><td>wc -l across .py/.js/.sol</td></tr>
+            <tr><td>Total Files</td><td>159</td><td>find (excl. node_modules, venv)</td></tr>
+            <tr><td>API Routes / Endpoints</td><td>8</td><td>backend/app.py route audit</td></tr>
+            <tr><td>Auth Coverage</td><td>75% protected (6/8 routes)</td><td>decorator audit</td></tr>
+            <tr><td>Error Boundaries</td><td>0 (React)</td><td>frontend component audit</td></tr>
+            <tr><td>Test Files</td><td>0 (backend) / 1 (frontend App.test.js)</td><td>find *test*</td></tr>
+            <tr><td>HTTP Timeout</td><td>Not configured</td><td>backend/app.py (no timeout set)</td></tr>
+            <tr><td>DB Pool Size</td><td>5 (SQLAlchemy default)</td><td>backend/app.py (no override)</td></tr>
+            <tr><td>Session TTL</td><td>1 day (permanent session)</td><td>backend/app.py:26</td></tr>
+            <tr><td>Rate Limit</td><td>None configured</td><td>backend/app.py (no Flask-Limiter)</td></tr>
+            <tr><td>Replicas (backend)</td><td>1 — SPOF</td><td>k8s/base/backend/deployment.yaml</td></tr>
+            <tr><td>Replicas (frontend)</td><td>1 — SPOF</td><td>k8s/base/frontend/deployment.yaml</td></tr>
+            <tr><td>Blockchain Cert Limit</td><td>~500 (gas wall)</td><td>CertificateIssuer.sol:getAllCertificates()</td></tr>
+            <tr><td>Top Coupling Hotspot</td><td>backend/app.py (all 8 routes)</td><td>import analysis</td></tr>
+            <tr><td>Contributors (6 months)</td><td>1 (bus factor = 1)</td><td>git log</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SECTION 2: What Works Well -->
+      <div class="section-divider" id="section2">What Works Well</div>
+      <div class="section" id="strengths">
+        <h2>What Works Well</h2>
+        <div class="strength-card">
+          <h4>✅ Auth decorator pattern is clean and consistent</h4>
+          <p>The <code>@require_auth</code> and <code>@require_admin</code> decorators in <code>backend/app.py</code> are well-implemented with proper <code>@wraps</code> usage. Critically, <code>stud_id</code> is always derived from the session — never trusted from the client body (see <code>/request_certificate</code> line: <code>stud_id = session.get('user_id')</code>). Passwords are hashed with Werkzeug's PBKDF2-based <code>generate_password_hash</code> and verified with <code>check_password_hash</code>. The <code>safe_model_to_dict</code> helper always strips the password field before returning user data.</p>
+        </div>
+        <div class="strength-card">
+          <h4>✅ Secrets properly managed via Kubernetes Secrets — not hardcoded</h4>
+          <p><code>SECRET_KEY</code> and <code>DATABASE_URL</code> are injected via <code>secretKeyRef</code> in <code>k8s/base/backend/deployment.yaml</code>. The app raises <code>RuntimeError</code> at startup if these env vars are missing — fast fail, no silent misconfiguration. The <code>.env</code> file is correctly listed in <code>.gitignore</code>.</p>
+        </div>
+        <div class="strength-card">
+          <h4>✅ Solidity contract has strong access control</h4>
+          <p><code>CertificateIssuer.sol</code> implements a robust authorization model: <code>onlyOwner</code> and <code>onlyAuthorized</code> modifiers, an authorized-issuer registry with revocation (<code>authorizeIssuer</code> / <code>revokeIssuer</code>), ownership transfer with events, and duplicate-certificate prevention via <code>_certificateExists</code> mapping. Events are emitted for all state changes.</p>
+        </div>
+        <div class="strength-card">
+          <h4>✅ Kubernetes pod security hardened</h4>
+          <p>The backend deployment runs as a non-root user (<code>runAsNonRoot: true</code>, <code>runAsUser: 1000</code>), drops all Linux capabilities (<code>capabilities.drop: [ALL]</code>), and prevents privilege escalation. Resource requests and limits are defined. These are best practices often skipped in early-stage projects.</p>
+        </div>
+        <div class="strength-card">
+          <h4>✅ Session cookie security is environment-aware</h4>
+          <p><code>SESSION_COOKIE_SECURE</code> is set to <code>True</code> in production (FLASK_ENV != 'development') and <code>SESSION_COOKIE_HTTPONLY</code> is always <code>True</code>. <code>SESSION_COOKIE_SAMESITE = 'Lax'</code> provides CSRF protection for same-origin requests. The K8s deployment sets <code>FLASK_ENV=production</code>, so the secure flag is always enabled in prod.</p>
+        </div>
+      </div>
+
+      <!-- SECTION 3: Risk Landscape -->
+      <div class="section-divider" id="section3">Risk Landscape</div>
+
+      <!-- Risk Score & Severity Breakdown -->
+      <div class="section" id="risk-score">
+        <h2>Risk Score &amp; Severity Breakdown</h2>
+        <div class="risk-score-container">
+          <div class="score-ring">
+            <svg width="180" height="180">
+              <circle class="bg" cx="90" cy="90" r="78"/>
+              <circle class="progress" cx="90" cy="90" r="78"
+                      stroke="#c05621"
+                      stroke-dasharray="490"
+                      stroke-dashoffset="191"/>
+            </svg>
+            <div class="value">
+              <div class="percentage" style="color: #c05621;">61</div>
+              <div class="label" style="color: #c05621; font-weight: 600;">High Risk</div>
+            </div>
+          </div>
+        </div>
+        <div class="severity-grid">
+          <div class="severity-card critical">
+            <div class="count">1</div>
+            <div class="sev-label">Critical</div>
+          </div>
+          <div class="severity-card high">
+            <div class="count">5</div>
+            <div class="sev-label">High</div>
+          </div>
+          <div class="severity-card medium">
+            <div class="count">3</div>
+            <div class="sev-label">Medium</div>
+          </div>
+          <div class="severity-card low">
+            <div class="count">0</div>
+            <div class="sev-label">Low</div>
+          </div>
+        </div>
+        <div class="score-info-tip">
+          <details>
+            <summary>&#9432; How is this score calculated?</summary>
+            <div class="tip-content">
+              <p style="margin:0 0 0.4rem;"><strong>Formula:</strong> <code>min(100, round(log&#8321;&#8320;(C&#215;100 + H&#215;30 + M&#215;10 + L&#215;3 + 1) &#215; 25))</code></p>
+              <p style="margin:0 0 0.4rem;">Logarithmic scaling — the first critical finding has high impact, each additional one adds progressively less.</p>
+              <table>
+                <tr><td><strong>0</strong></td><td>No Risk</td></tr>
+                <tr><td><strong>1 – 25</strong></td><td>Low Risk</td></tr>
+                <tr><td><strong>26 – 50</strong></td><td>Moderate Risk</td></tr>
+                <tr><td><strong>51 – 75</strong></td><td>High Risk</td></tr>
+                <tr><td><strong>76 – 100</strong></td><td>Critical Risk</td></tr>
+              </table>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <div class="section" id="category-breakdown">
+        <h2>Issues by Category</h2>
+        <div class="category-grid">
+          <div class="category-card">
+            <div class="cat-icon">⚙️</div>
+            <div class="cat-name">Operability</div>
+            <div class="cat-count">2</div>
+            <div class="cat-breakdown">1 Critical · 1 High · 0 Medium · 0 Low</div>
+          </div>
+          <div class="category-card">
+            <div class="cat-icon">🛡️</div>
+            <div class="cat-name">Security Surface</div>
+            <div class="cat-count">2</div>
+            <div class="cat-breakdown">0 Critical · 2 High · 0 Medium · 0 Low</div>
+          </div>
+          <div class="category-card">
+            <div class="cat-icon">💥</div>
+            <div class="cat-name">Failure Cascades</div>
+            <div class="cat-count">1</div>
+            <div class="cat-breakdown">0 Critical · 1 High · 0 Medium · 0 Low</div>
+          </div>
+          <div class="category-card">
+            <div class="cat-icon">🔄</div>
+            <div class="cat-name">State Incoherence</div>
+            <div class="cat-count">1</div>
+            <div class="cat-breakdown">0 Critical · 1 High · 0 Medium · 0 Low</div>
+          </div>
+          <div class="category-card">
+            <div class="cat-icon">🔐</div>
+            <div class="cat-name">Authentication Gaps</div>
+            <div class="cat-count">1</div>
+            <div class="cat-breakdown">0 Critical · 1 High · 0 Medium · 0 Low</div>
+          </div>
+          <div class="category-card">
+            <div class="cat-icon">📈</div>
+            <div class="cat-name">Scalability Walls</div>
+            <div class="cat-count">1</div>
+            <div class="cat-breakdown">0 Critical · 0 High · 1 Medium · 0 Low</div>
+          </div>
+          <div class="category-card">
+            <div class="cat-icon">🔧</div>
+            <div class="cat-name">Maintainability</div>
+            <div class="cat-count">2</div>
+            <div class="cat-breakdown">0 Critical · 0 High · 2 Medium · 0 Low</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STRIDE Threat Model -->
+      <div class="section" id="stride-threat-model">
+        <h2>STRIDE Threat Model</h2>
+        <p style="font-size:0.9rem;color:var(--text-light);margin-bottom:1.25rem;">Threats classified using Microsoft's STRIDE framework — Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege.</p>
+        <div class="stride-grid">
+          <div class="stride-card spoofing">
+            <div class="stride-icon">S</div>
+            <div class="stride-name">Spoofing</div>
+            <div class="stride-count">2</div>
+            <div class="stride-desc">Authentication threats</div>
+          </div>
+          <div class="stride-card tampering">
+            <div class="stride-icon">T</div>
+            <div class="stride-name">Tampering</div>
+            <div class="stride-count">1</div>
+            <div class="stride-desc">Integrity threats</div>
+          </div>
+          <div class="stride-card repudiation">
+            <div class="stride-icon">R</div>
+            <div class="stride-name">Repudiation</div>
+            <div class="stride-count">1</div>
+            <div class="stride-desc">Non-repudiation threats</div>
+          </div>
+          <div class="stride-card info-disclosure">
+            <div class="stride-icon">I</div>
+            <div class="stride-name">Information Disclosure</div>
+            <div class="stride-count">1</div>
+            <div class="stride-desc">Confidentiality threats</div>
+          </div>
+          <div class="stride-card denial-of-service">
+            <div class="stride-icon">D</div>
+            <div class="stride-name">Denial of Service</div>
+            <div class="stride-count">3</div>
+            <div class="stride-desc">Availability threats</div>
+          </div>
+          <div class="stride-card elevation">
+            <div class="stride-icon">E</div>
+            <div class="stride-name">Elevation of Privilege</div>
+            <div class="stride-count">0</div>
+            <div class="stride-desc">Authorization threats</div>
+          </div>
+        </div>
+        <div class="diagram-container">
+          <h4>9. Trust Boundary &amp; Data Flow Diagram</h4>
+          <pre class="mermaid">graph TB
+    subgraph External["External Zone — Untrusted"]
+      Browser["Browser (Student/Admin)"]
+      Attacker["⚠️ Potential Attacker\nUnlimited login attempts"]
+    end
+    subgraph App["Application Zone"]
+      FlaskAPI["Flask API\nPort 5001\nSession Cookie Auth"]
+      SessionMem["In-Memory Sessions\n⚠️ Lost on restart"]
+    end
+    subgraph Data["Data Zone"]
+      RDS["PostgreSQL RDS\nPort 5432\nSQLAlchemy ORM"]
+    end
+    subgraph Blockchain["Blockchain Zone — Public"]
+      Contract["CertificateIssuer.sol\nSepolia Testnet\nPublic read, auth write"]
+      Wallet["Deployer Wallet\nPRIVATE_KEY in .env"]
+    end
+
+    Browser -->|"HTTPS + Cookie\nSamesite=Lax"| FlaskAPI
+    Attacker -->|"⚠️ No rate limit\nBrute force possible"| FlaskAPI
+    FlaskAPI -->|"Read/Write session"| SessionMem
+    FlaskAPI -->|"Parameterized SQL\nSQLAlchemy ORM"| RDS
+    Browser -->|"MetaMask JSON-RPC\nDirect to blockchain"| Contract
+    Wallet -->|"Signs TX\nPrivate key from .env"| Contract
+
+    classDef danger fill:#dc354520,stroke:#dc3545,color:#dc3545
+    classDef warn fill:#CF940C20,stroke:#CF940C,color:#CF940C
+    class Attacker,SessionMem,Wallet danger</pre>
+        </div>
+
+        <details class="stride-detail">
+          <summary>S — Spoofing (2 threats)</summary>
+          <div>
+            <div class="stride-threat">
+              <div class="threat-asset">Asset: Admin and Student accounts</div>
+              <div class="threat-title">Credential brute-force via unlimited login attempts</div>
+              <p>POST /post_univ and /post_stud accept unlimited login attempts with no lockout or rate limiting. An attacker can automate password guessing at network speed.</p>
+              <div class="threat-controls">
+                <span class="badge badge-critical">high</span>
+                <span class="countermeasure-badge">Existing: None</span>
+                <span class="countermeasure-badge">Recommended: Flask-Limiter 5 req/min + account lockout</span>
+              </div>
+            </div>
+            <div class="stride-threat">
+              <div class="threat-asset">Asset: Session integrity across replicas</div>
+              <div class="threat-title">Session loss causes silent re-authentication bypass</div>
+              <p>In-memory sessions are lost when the Flask pod restarts. Users are logged out unexpectedly. Adding a second replica causes 50% of requests to get 401 errors. Confused users may be tricked by phishing re-login prompts.</p>
+              <div class="threat-controls">
+                <span class="badge badge-important">medium</span>
+                <span class="countermeasure-badge">Existing: None</span>
+                <span class="countermeasure-badge">Recommended: Redis session store (Flask-Session)</span>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="stride-detail">
+          <summary>T — Tampering (1 threat)</summary>
+          <div>
+            <div class="stride-threat">
+              <div class="threat-asset">Asset: Certificate validity (DB + blockchain)</div>
+              <div class="threat-title">Off-chain/on-chain state drift corrupts certificate truth</div>
+              <p>Certificates can be issued in the DB without a blockchain record, or issued on-chain without a DB entry. There is no reconciliation mechanism. An admin could issue a DB certificate that appears valid in the API but has no on-chain proof. Verifiers get contradictory results depending on which system they query.</p>
+              <div class="threat-controls">
+                <span class="badge badge-critical">high</span>
+                <span class="countermeasure-badge">Existing: None</span>
+                <span class="countermeasure-badge">Recommended: Atomic issuance + blockchain event listener</span>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="stride-detail">
+          <summary>R — Repudiation (1 threat)</summary>
+          <div>
+            <div class="stride-threat">
+              <div class="threat-asset">Asset: Certificate issuance audit trail</div>
+              <div class="threat-title">No audit log for admin actions beyond DB records</div>
+              <p>Admin certificate issuance, student record creation, and grade updates are logged to Flask's application logger at INFO level only. There is no dedicated audit log, request ID tracing, or tamper-evident audit trail. An admin could issue then revoke a certificate, and there would be no evidence of the action beyond DB timestamps (which can be altered with direct DB access).</p>
+              <div class="threat-controls">
+                <span class="badge badge-important">medium</span>
+                <span class="countermeasure-badge">Existing: Flask INFO logging</span>
+                <span class="countermeasure-badge">Recommended: Structured audit log with request IDs</span>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="stride-detail">
+          <summary>I — Information Disclosure (1 threat)</summary>
+          <div>
+            <div class="stride-threat">
+              <div class="threat-asset">Asset: Blockchain deployer private key</div>
+              <div class="threat-title">PRIVATE_KEY in .env could leak if .gitignore is misconfigured</div>
+              <p><code>blockchain/hardhat.config.js</code> reads <code>PRIVATE_KEY</code> from <code>process.env</code>, loaded from the repo root <code>.env</code>. The root <code>.gitignore</code> excludes <code>.env</code>, but the blockchain subdirectory has its own <code>.gitignore</code> that does not explicitly exclude <code>../.env</code>. If a developer runs <code>git add .</code> from inside <code>blockchain/</code>, the parent <code>.env</code> could be captured.</p>
+              <div class="threat-controls">
+                <span class="badge badge-critical">high</span>
+                <span class="countermeasure-badge">Existing: Root .gitignore</span>
+                <span class="countermeasure-badge">Recommended: Move PRIVATE_KEY to K8s secret + HSM for prod</span>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="stride-detail">
+          <summary>D — Denial of Service (3 threats)</summary>
+          <div>
+            <div class="stride-threat">
+              <div class="threat-asset">Asset: Backend availability</div>
+              <div class="threat-title">Missing /health endpoint causes immediate CrashLoopBackOff</div>
+              <p>The Kubernetes livenessProbe and readinessProbe both poll <code>GET /health</code> on port 5001. This route does not exist in <code>backend/app.py</code>. Every deployment will cause pods to fail health checks, be restarted by K8s, and enter CrashLoopBackOff. The backend is completely unavailable after any deploy.</p>
+              <div class="threat-controls">
+                <span class="badge badge-critical">critical</span>
+                <span class="countermeasure-badge">Existing: None</span>
+                <span class="countermeasure-badge">Recommended: Add /health route with DB ping</span>
+              </div>
+            </div>
+            <div class="stride-threat">
+              <div class="threat-asset">Asset: Backend availability</div>
+              <div class="threat-title">Single replica — any pod restart = 100% downtime</div>
+              <p>Both backend and frontend are configured with <code>replicas: 1</code>. Regular K8s node rotation, rolling updates, or pod evictions cause full service outage until the new pod starts (~15-30 seconds). No PodDisruptionBudget exists.</p>
+              <div class="threat-controls">
+                <span class="badge" style="background:rgba(192,86,33,0.12);color:var(--high);">high</span>
+                <span class="countermeasure-badge">Existing: None</span>
+                <span class="countermeasure-badge">Recommended: replicas: 2 + Redis sessions + PodDisruptionBudget</span>
+              </div>
+            </div>
+            <div class="stride-threat">
+              <div class="threat-asset">Asset: Blockchain certificate listing</div>
+              <div class="threat-title">getAllCertificates() hits gas limit at ~500 certificates</div>
+              <p><code>getAllCertificates()</code> allocates 4 dynamic arrays and iterates all student IDs in a single call. At ~500 entries, the call approaches Ethereum's block gas limit (~30M) and begins reverting.</p>
+              <div class="threat-controls">
+                <span class="badge badge-important">medium</span>
+                <span class="countermeasure-badge">Existing: None</span>
+                <span class="countermeasure-badge">Recommended: Add paginated getter function</span>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="section" id="findings-basic">
+        <h2>Basic Issues</h2>
+        <p>Issues detectable by tooling or configuration review. Ordered by exploitability (easiest first).</p>
+        <table>
+          <thead><tr><th>Severity</th><th>Finding</th><th>File</th><th>Attack Complexity</th><th>Fix (Est.)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-critical">Critical</span></td>
+              <td><strong>Missing /health endpoint</strong> — K8s probes poll <code>/health</code> but Flask never defines it. CrashLoopBackOff on every deploy.</td>
+              <td><code>backend/app.py</code> + <code>k8s/base/backend/deployment.yaml</code></td>
+              <td><span class="attack-complexity ac-none">NONE</span></td>
+              <td>5 min</td>
+            </tr>
+            <tr>
+              <td><span class="badge" style="background:rgba(192,86,33,0.12);color:var(--high);">High</span></td>
+              <td><strong>CORS defaults to localhost:3000</strong> — If ALLOWED_ORIGINS env var missing in prod, all API calls from production frontend are blocked (CORS error).</td>
+              <td><code>backend/app.py:20</code></td>
+              <td><span class="attack-complexity ac-none">NONE</span></td>
+              <td>10 min</td>
+            </tr>
+            <tr>
+              <td><span class="badge" style="background:rgba(192,86,33,0.12);color:var(--high);">High</span></td>
+              <td><strong>No rate limiting on login endpoints</strong> — POST /post_univ and /post_stud accept unlimited attempts. Brute force trivially possible.</td>
+              <td><code>backend/app.py:63,81</code></td>
+              <td><span class="attack-complexity ac-low">LOW</span></td>
+              <td>30 min</td>
+            </tr>
+            <tr>
+              <td><span class="badge" style="background:rgba(192,86,33,0.12);color:var(--high);">High</span></td>
+              <td><strong>CI/CD never pushes to ECR or updates kustomization</strong> — Workflow builds images locally but does not push or trigger ArgoCD sync. Nothing is ever deployed.</td>
+              <td><code>.github/workflows/ci-cd-vasthavik.yaml</code></td>
+              <td><span class="attack-complexity ac-none">NONE</span></td>
+              <td>60 min</td>
+            </tr>
+            <tr>
+              <td><span class="badge" style="background:rgba(192,86,33,0.12);color:var(--high);">High</span></td>
+              <td><strong>Single replica (SPOF)</strong> — Both backend and frontend have replicas: 1. Any pod restart = 100% downtime. No PodDisruptionBudget.</td>
+              <td><code>k8s/base/backend/deployment.yaml</code> + <code>k8s/base/frontend/deployment.yaml</code></td>
+              <td><span class="attack-complexity ac-none">NONE</span></td>
+              <td>15 min</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-important">Medium</span></td>
+              <td><strong>Flask-SQLAlchemy version unpinned</strong> — requirements.txt lists Flask-SQLAlchemy without version. Breaking changes on pip install.</td>
+              <td><code>backend/requirements.txt</code></td>
+              <td><span class="attack-complexity ac-high">HIGH</span></td>
+              <td>5 min</td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>Fix Diffs</h3>
+        <h4>1. Add /health endpoint (5 min)</h4>
+        <pre>--- a/backend/app.py
++++ b/backend/app.py
+ @app.route("/")
+ def hello_world():
+     return "&lt;p&gt;hello world&lt;/p&gt;"
+
++@app.route("/health")
++def health():
++    try:
++        db.session.execute(db.text("SELECT 1"))
++        return jsonify({"status": "healthy", "db": "ok"}), 200
++    except Exception as e:
++        logger.error("Health check failed: %s", e)
++        return jsonify({"status": "unhealthy", "db": "error"}), 503</pre>
+        <h4>2. Add ALLOWED_ORIGINS to K8s backend deployment (10 min)</h4>
+        <pre>--- a/k8s/base/backend/deployment.yaml
++++ b/k8s/base/backend/deployment.yaml
+           - name: FLASK_ENV
+             value: production
++          - name: ALLOWED_ORIGINS
++            value: "https://vasthavik-dev.agents.opsera-labs.com"</pre>
+        <h4>3. Pin Flask-SQLAlchemy (5 min)</h4>
+        <pre>--- a/backend/requirements.txt
++++ b/backend/requirements.txt
+-Flask-SQLAlchemy
++Flask-SQLAlchemy==3.1.1</pre>
+      </div>
+
+      <div class="section" id="findings-advanced">
+        <h2>Advanced Issues</h2>
+        <p>Architectural concerns that are hard to reverse. Requires design decisions.</p>
+
+        <details>
+          <summary><span class="badge" style="background:rgba(192,86,33,0.12);color:var(--high);">High</span> Off-chain / On-chain Certificate State Drift — Trust Model Broken <span class="attack-complexity ac-low">LOW complexity</span></summary>
+          <div>
+            <p><strong>What's wrong:</strong> Certificates are stored in two independent systems — PostgreSQL (via <code>/issue_certificate</code> API) and Ethereum (via MetaMask calling <code>CertificateIssuer.sol</code> directly from the browser). These are completely decoupled operations. An admin can issue a certificate in the DB without creating a blockchain record, or issue on-chain without a DB entry. The blockchain's <code>issueCertificate()</code> and the API's <code>/issue_certificate</code> use different student ID schemas and have no shared transaction boundary.</p>
+            <p><strong>Who can exploit this:</strong> Any admin (internal). No external attack required.</p>
+            <p><strong>Affected files:</strong> <code>backend/app.py:/issue_certificate</code>, <code>blockchain/contracts/CertificateIssuer.sol:issueCertificate()</code>, <code>frontend/src/components/certificateIssuer.js</code></p>
+            <p><strong>Reversibility cost:</strong> High — requires contract migration or event listener service + data reconciliation job.</p>
+            <div class="inaction-cost"><strong>Cost of inaction:</strong> 3 months: First certificate disputes arise. 6 months: Institutions lose trust in verification. 12 months: The blockchain component provides zero value; entire system is just a DB app.</div>
+            <p><strong>Recommended fix:</strong> Define the DB as authoritative. After DB commit, emit a blockchain transaction asynchronously (backend calls contract via Web3.py). Listen for on-chain <code>CertificateIssued</code> events to confirm. Store <code>tx_hash</code> in the <code>certi</code> table.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary><span class="badge badge-important">Medium</span> getAllCertificates() Gas Limit DoS — Hard Ceiling at ~500 Certs <span class="attack-complexity ac-none">NONE complexity</span></summary>
+          <div>
+            <p><strong>What's wrong:</strong> <code>CertificateIssuer.sol:getAllCertificates()</code> iterates all <code>studentIds</code> in one call, allocating 4 dynamic arrays of the full length. At ~500 entries, this approaches Ethereum's block gas limit (~30M gas) and reverts. The frontend calls this function to display all certificates.</p>
+            <p><strong>Affected file:</strong> <code>blockchain/contracts/CertificateIssuer.sol:getAllCertificates()</code></p>
+            <p><strong>Reversibility cost:</strong> High — requires contract redeployment and state migration.</p>
+            <div class="inaction-cost"><strong>Cost of inaction:</strong> 6 months: Feature fails silently as certificate count grows. 12 months: Contract must be redeployed; migrating existing data requires admin scripts.</div>
+            <pre>// Add to CertificateIssuer.sol
+function getCertificatesPaginated(uint256 offset, uint256 limit)
+    public view returns (
+        uint256[] memory ids,
+        string[] memory grades,
+        string[] memory programs,
+        address[] memory issuers
+    ) {
+    uint256 total = studentIds.length;
+    if (offset >= total) {
+        return (new uint256[](0), new string[](0), new string[](0), new address[](0));
+    }
+    uint256 end = offset + limit > total ? total : offset + limit;
+    uint256 size = end - offset;
+    ids = new uint256[](size);
+    grades = new string[](size);
+    programs = new string[](size);
+    issuers = new address[](size);
+    for (uint256 i = 0; i &lt; size; i++) {
+        uint256 id = studentIds[offset + i];
+        Certificate memory cert = certificates[id];
+        ids[i] = cert.studentId;
+        grades[i] = cert.grade;
+        programs[i] = cert.program;
+        issuers[i] = cert.issuer;
+    }
+}</pre>
+          </div>
+        </details>
+
+        <details>
+          <summary><span class="badge badge-important">Medium</span> No Backend Test Suite — Regressions Undetected <span class="attack-complexity ac-high">HIGH complexity</span></summary>
+          <div>
+            <p><strong>What's wrong:</strong> There are zero test files in <code>backend/</code>. CI runs <code>flake8</code> with <code>continue-on-error: true</code>, meaning even lint failures are ignored. Auth logic, certificate issuance, and DB operations can regress silently.</p>
+            <p><strong>Reversibility cost:</strong> Low — can add tests without breaking anything.</p>
+            <div class="inaction-cost"><strong>Cost of inaction:</strong> 3 months: First auth regression introduced. 6 months: Debugging prod issues without reproducible tests costs 3–5x more time.</div>
+          </div>
+        </details>
+      </div>
+
+      <!-- SECTION 4: Deep Insights -->
+      <div class="section-divider" id="section4">Deep Insights — Cross-Cutting Patterns Across the Codebase</div>
+      <div class="section" id="config-contradictions">
+        <h2>Configuration Contradictions</h2>
+        <div class="contradiction-card">
+          <h4>Health Probe vs. Missing Route — Pods Will Never Start</h4>
+          <div class="config-pair">
+            <div class="config-val">livenessProbe.path: /health<br/>(k8s/base/backend/deployment.yaml:livenessProbe)</div>
+            <div class="vs">VS</div>
+            <div class="config-val">No @app.route('/health') defined<br/>(backend/app.py — all 8 routes audited)</div>
+          </div>
+          <p><span class="badge badge-critical">Critical</span> Every deployment causes CrashLoopBackOff. K8s sends GET /health → Flask returns 404 → K8s marks pod unhealthy → pod restarted → loop forever. Fix: add /health endpoint with DB ping (5 min).</p>
+        </div>
+        <div class="contradiction-card">
+          <h4>CORS Default vs. Production Frontend URL</h4>
+          <div class="config-pair">
+            <div class="config-val">ALLOWED_ORIGINS default: 'http://localhost:3000'<br/>(backend/app.py:20)</div>
+            <div class="vs">VS</div>
+            <div class="config-val">Production URL: vasthavik-dev.agents.opsera-labs.com<br/>(DEPLOYMENT-CONTEXT.md)</div>
+          </div>
+          <p><span class="badge" style="background:rgba(192,86,33,0.12);color:var(--high);">High</span> If ALLOWED_ORIGINS is not set in the K8s deployment (it currently isn't in the base deployment.yaml), all CORS preflight requests from the production frontend return 403. The app is non-functional in production until this env var is set.</p>
+        </div>
+        <div class="contradiction-card">
+          <h4>Flask Session Lifetime vs. No Shared Session Store</h4>
+          <div class="config-pair">
+            <div class="config-val">app.permanent_session_lifetime: 1 day<br/>In-memory session storage<br/>(backend/app.py:26)</div>
+            <div class="vs">VS</div>
+            <div class="config-val">K8s allows pod restarts at any time<br/>No session persistence across pods<br/>(k8s/base/backend/deployment.yaml)</div>
+          </div>
+          <p><span class="badge badge-important">Medium</span> Sessions are configured to last 1 day, but they live in Flask's in-memory store. Any pod restart (including rolling updates, node evictions, health check failures) silently invalidates all active sessions. Users see unexplained logouts.</p>
+        </div>
+      </div>
+      <div class="section" id="stress-projection">
+        <h2>Stress Projection — What Breaks at Scale</h2>
+        <div class="stress-card">
+          <h4>Load Capacity Analysis — Flask Backend (1 replica, default pool=5)</h4>
+          <div class="stress-tiers">
+            <div class="stress-tier current">Current Baseline<br/>~10-50 concurrent users<br/>Flask dev-server threading<br/>DB pool: 5 connections</div>
+            <div class="stress-tier warn">2x Load (~100 users)<br/>DB connection pool exhausted<br/>Requests queue &gt;30s<br/>Users see timeouts</div>
+            <div class="stress-tier danger">5x Load (~250 users)<br/>In-memory sessions blow up<br/>Flask memory grows unbounded<br/>OOM kill possible</div>
+            <div class="stress-tier critical">10x Load (~500 users)<br/>Single pod overwhelmed<br/>K8s OOM kill → pod restart<br/>→ all sessions lost</div>
+            <div class="stress-tier catastrophic">100x Burst<br/>No rate limiting<br/>No circuit breaker<br/>Complete DoS in minutes</div>
+            <div class="stress-tier scaling">Horizontal Scaling<br/>❌ Blocked by in-memory sessions<br/>Fix: Redis session store<br/>Then: replicas: 2+</div>
+          </div>
+        </div>
+        <div class="stress-card">
+          <h4>Blockchain Scaling Wall — getAllCertificates()</h4>
+          <div class="stress-tiers">
+            <div class="stress-tier current">0–100 certs<br/>~500K gas per call<br/>Well under 30M limit<br/>Fast response</div>
+            <div class="stress-tier warn">500 certs<br/>~15M gas<br/>Approaching limit<br/>Slow responses</div>
+            <div class="stress-tier danger">1,000 certs<br/>~30M gas<br/>At block gas limit<br/>Call reverts intermittently</div>
+            <div class="stress-tier critical">1,500+ certs<br/>Hard revert on every call<br/>Certificate listing broken<br/>No workaround</div>
+            <div class="stress-tier catastrophic">Any scale<br/>No upgrade path<br/>Contract must be redeployed<br/>Data migration required</div>
+            <div class="stress-tier scaling">Fix Now<br/>Add paginated getter<br/>Low gas per page<br/>No redeployment needed</div>
+          </div>
+        </div>
+      </div>
+      <div class="section" id="implicit-contracts">
+        <h2>Implicit Contracts — Hidden Assumptions</h2>
+        <div class="assumption-card">
+          <h4>Flask app assumes SECRET_KEY and DATABASE_URL are always set</h4>
+          <p><code>backend/app.py:17-34</code> — The app raises RuntimeError at startup if these vars are missing. This is actually good defensive coding — but the K8s secret must be created manually before ArgoCD deploys.</p>
+          <div class="scenario">"A new dev deploys to a fresh namespace without creating the K8s secret first → Flask pod starts → immediately raises RuntimeError → CrashLoopBackOff → no useful error message visible without kubectl logs."</div>
+        </div>
+        <div class="assumption-card">
+          <h4>request_certificate assumes stud_id is always in session</h4>
+          <p><code>backend/app.py</code> <code>/request_certificate</code> route — <code>stud_id = session.get('user_id')</code> returns None if session is missing the key (e.g., after pod restart). <code>@require_auth</code> only checks <code>'user_id' in session</code>, not that it's non-None. A student whose session was created before a pod restart can still pass auth check if the cookie persists, but <code>user_id</code> could be stale or missing.</p>
+          <div class="scenario">"A student logs in, pod restarts, student makes certificate request → session lost → @require_auth blocks → 401. Safe. But: if pod restarts during an active session and Flask somehow reconstructs partial session state, stud_id could be None → INSERT with stud_id=None → DB constraint error."</div>
+        </div>
+        <div class="assumption-card">
+          <h4>Hardhat deploy.js assumes PRIVATE_KEY and API_URL are always set</h4>
+          <p><code>blockchain/hardhat.config.js:4-5</code> — <code>const {API_URL, PRIVATE_KEY} = process.env</code>. If .env is missing or incomplete, hardhat silently uses <code>undefined</code> as the private key, which fails with a cryptic ethers error at deploy time.</p>
+          <div class="scenario">"A new developer runs 'npx hardhat run deploy.js' without setting .env → hardhat uses PRIVATE_KEY=undefined → transaction signing fails with 'invalid private key' → they assume the contract is already deployed and skip it → blockchain state is empty."</div>
+        </div>
+        <div class="assumption-card">
+          <h4>Frontend assumes MetaMask is installed in the browser</h4>
+          <p><code>frontend/src/components/connect.js</code> — <code>sdk?.connect()</code> fails silently with a caught error if MetaMask is not installed. The UI shows a connect button that does nothing visually on failure. No user feedback.</p>
+          <div class="scenario">"A new student opens the app on a corporate browser without MetaMask → clicks Connect → nothing happens → they assume the app is broken."</div>
+        </div>
+      </div>
+      <div class="section" id="behavioral-coupling">
+        <h2>Behavioral Coupling — Invisibly Connected Modules</h2>
+        <div class="coupling-card">
+          <h4>frontend/src/contractabi/contractabi.js ↔ blockchain/contracts/CertificateIssuer.sol</h4>
+          <p>The frontend hardcodes the contract ABI in <code>contractabi.js</code>. If the Solidity contract is upgraded and redeployed with a different function signature (e.g., adding a <code>revokeCertificate</code> function), the frontend silently uses the stale ABI and calls fail with cryptic errors. There is no versioning or automatic ABI sync between the two.</p>
+          <p><strong>Breaks when:</strong> A developer updates the Solidity contract and redeploys without regenerating and updating <code>contractabi.js</code>.</p>
+          <p><strong>Fix:</strong> Run <code>npx hardhat compile</code> as part of the frontend build to auto-export the ABI from <code>blockchain/artifacts/</code>.</p>
+        </div>
+        <div class="coupling-card">
+          <h4>K8s livenessProbe path ↔ backend/app.py route definitions</h4>
+          <p>The Kubernetes deployment file hard-codes <code>path: /health</code> but Flask route definitions are maintained separately in <code>app.py</code>. Adding or renaming routes in Python has no automatic validation against the K8s manifest. This specific mismatch is the root cause of the Critical finding.</p>
+          <p><strong>Fix:</strong> Add a CI check that verifies the /health route exists in app.py before merging.</p>
+        </div>
+      </div>
+      <div class="section" id="dead-paths">
+        <h2>Dead Paths — Code That Can Never Run</h2>
+        <div class="dead-path-card">
+          <h4>blockchain/contracts/Lock.sol — Unused test contract in production codebase</h4>
+          <p><code>blockchain/contracts/Lock.sol</code> and <code>blockchain/test/Lock.js</code> are the Hardhat boilerplate contracts that come with project initialization. They have no relation to the certificate issuance use case. They are never deployed and never tested in CI, but they exist in the production codebase and increase the attack surface (Slither/Mythril will flag them in security scans).</p>
+          <p><strong>Recommendation:</strong> Delete <code>blockchain/contracts/Lock.sol</code>, <code>blockchain/test/Lock.js</code>, and <code>blockchain/ignition/modules/Lock.js</code>.</p>
+        </div>
+      </div>
+
+      <!-- SECTION 5: Remediation Roadmap -->
+      <div class="section-divider" id="section5">Remediation Roadmap</div>
+      <div class="section" id="quick-wins">
+        <h2>Quick Wins — Fix Today</h2>
+        <div class="sprint-card">
+          <h4>Sprint: 4 fixes, ~30 minutes total</h4>
+          <div class="sprint-meta">All four changes below can be made and merged in a single PR. No architectural decisions required.</div>
+          <pre>--- a/backend/app.py
++++ b/backend/app.py
++@app.route("/health")
++def health():
++    try:
++        db.session.execute(db.text("SELECT 1"))
++        return jsonify({"status": "healthy", "db": "ok"}), 200
++    except Exception as e:
++        logger.error("Health check failed: %s", e)
++        return jsonify({"status": "unhealthy", "db": "error"}), 503
+
+--- a/backend/requirements.txt
++++ b/backend/requirements.txt
+-Flask-SQLAlchemy
++Flask-SQLAlchemy==3.1.1
+
+--- a/k8s/base/backend/deployment.yaml
++++ b/k8s/base/backend/deployment.yaml
+           - name: FLASK_ENV
+             value: production
++          - name: ALLOWED_ORIGINS
++            value: "https://vasthavik-dev.agents.opsera-labs.com"
+
+--- a/k8s/base/backend/deployment.yaml (replicas)
++++ b/k8s/base/backend/deployment.yaml
+-  replicas: 1
++  replicas: 2
+
+--- a/k8s/base/frontend/deployment.yaml (replicas)
++++ b/k8s/base/frontend/deployment.yaml
+-  replicas: 1
++  replicas: 2</pre>
+          <div class="pr-description">fix: critical health endpoint + CORS + replica SPOF
+
+## What
+- Add /health endpoint to Flask backend (fixes CrashLoopBackOff on K8s deploy)
+- Pin Flask-SQLAlchemy version in requirements.txt
+- Set ALLOWED_ORIGINS env var in backend K8s deployment for production frontend
+- Increase backend and frontend replicas from 1 to 2 to eliminate SPOF
+
+## Why
+The missing /health endpoint is a deploy-blocker: K8s probes will crash-loop
+every pod. CORS defaults to localhost which silently breaks all production API
+calls. Single replicas cause 100% downtime on any pod restart.
+
+## Risk
+Low. All changes are configuration or a 5-line route addition.</div>
+        </div>
+      </div>
+
+      <div class="section" id="fix-this-sprint">
+        <h2>Fix This Sprint</h2>
+        <table>
+          <thead><tr><th>Action</th><th>Effort</th><th>Impact</th><th>Finding</th></tr></thead>
+          <tbody>
+            <tr><td>Add Flask-Limiter rate limiting to /post_univ and /post_stud (5 req/min)</td><td>2h</td><td>Eliminates brute-force attack vector on admin login</td><td>No rate limiting on auth endpoints</td></tr>
+            <tr><td>Complete CI/CD pipeline: add ECR login + push + kustomization update steps to GitHub Actions workflow</td><td>3h</td><td>Enables actual deployment on every push to main</td><td>CI/CD never deploys</td></tr>
+            <tr><td>Add pagination to CertificateIssuer.sol (getCertificatesPaginated)</td><td>2h</td><td>Removes hard ceiling of ~500 certificates</td><td>getAllCertificates() gas DoS</td></tr>
+            <tr><td>Remove boilerplate Lock.sol / Lock.js files from blockchain/</td><td>30min</td><td>Reduces attack surface, removes noise from security scans</td><td>Dead paths</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section" id="plan-next-quarter">
+        <h2>Plan For Next Quarter</h2>
+        <table>
+          <thead><tr><th>Action</th><th>Effort</th><th>Impact</th><th>Prerequisite</th></tr></thead>
+          <tbody>
+            <tr><td>Add Redis session store (Flask-Session + AWS ElastiCache) to enable multi-replica and zero-downtime rolling updates</td><td>1 week</td><td>Enables horizontal scaling, eliminates session loss on pod restart</td><td>Decision: Redis vs JWT</td></tr>
+            <tr><td>Implement blockchain event listener service: backend calls contract via Web3.py, stores tx_hash in DB, reconciles on-chain events</td><td>2 weeks</td><td>Fixes off-chain/on-chain state drift; establishes single source of truth</td><td>Decision: blockchain authority model</td></tr>
+            <tr><td>Add backend test suite: pytest + Flask test client covering auth flows, certificate CRUD, and role enforcement</td><td>1 week</td><td>Prevents auth regressions; enables safe refactoring</td><td>None</td></tr>
+            <tr><td>Add K8s NetworkPolicy, PodDisruptionBudget, and seccomp profile to hardening checklist</td><td>3 days</td><td>Addresses Checkov failures; reduces container escape blast radius</td><td>None</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section" id="decisions">
+        <h2>Decisions to Make</h2>
+        <div class="decision-card">
+          <h4>Decision: How should user sessions be stored for horizontal scaling?</h4>
+          <p>Currently Flask uses in-memory sessions. This works with 1 replica but breaks with 2+ replicas and loses all sessions on pod restart. A decision is needed before increasing replicas beyond 1.</p>
+          <div class="inaction-cost"><strong>Cost of inaction:</strong> Replicas cannot be increased past 1 without session sharing. Every pod restart logs out all users. Autoscaling is impossible.</div>
+          <div class="option-grid">
+            <div class="option-card">
+              <h5>Option A: Redis session store (Flask-Session + ElastiCache)</h5>
+              <p><strong>Pros:</strong> Minimal code change, sessions survive pod restarts, full session invalidation on logout, existing session lifecycle intact</p>
+              <p><strong>Cons:</strong> Adds Redis/ElastiCache infrastructure dependency, slight latency increase (~1ms per request)</p>
+              <p><span class="risk-indicator risk-medium"></span>Effort: 1 week</p>
+            </div>
+            <div class="option-card">
+              <h5>Option B: Signed JWT cookies (stateless)</h5>
+              <p><strong>Pros:</strong> No external infrastructure, scales infinitely, fast</p>
+              <p><strong>Cons:</strong> Cannot invalidate tokens server-side (logout doesn't work until expiry), requires JWT refresh logic, significant code refactor</p>
+              <p><span class="risk-indicator risk-high"></span>Effort: 2 weeks</p>
+            </div>
+          </div>
+          <p><strong>Recommendation:</strong> Option A — Redis session store. Minimal code change, supports true logout, proven pattern for Flask apps. Add ElastiCache to Terraform in the same sprint as replica increase.</p>
+        </div>
+        <div class="decision-card">
+          <h4>Decision: Which system is the authoritative source of truth for certificates?</h4>
+          <p>Certificates currently exist in both PostgreSQL and Ethereum with no synchronization. Verifiers get different results depending on which system they query. A decision on the authority model is needed before the blockchain component can provide real value.</p>
+          <div class="inaction-cost"><strong>Cost of inaction:</strong> State drift grows with every certificate issued. Verifiers lose trust in the system. The blockchain component becomes unused.</div>
+          <div class="option-grid">
+            <div class="option-card">
+              <h5>Option A: DB is authoritative, blockchain is audit log</h5>
+              <p><strong>Pros:</strong> Practical for day-to-day operations, DB can be queried without RPC, faster UX, blockchain provides tamper-evident record</p>
+              <p><strong>Cons:</strong> Blockchain is secondary; institutions must trust the DB operator</p>
+              <p><span class="risk-indicator risk-medium"></span>Effort: 2 weeks (event listener service)</p>
+            </div>
+            <div class="option-card">
+              <h5>Option B: Blockchain is authoritative, DB is cache</h5>
+              <p><strong>Pros:</strong> Maximum trust — no central DB operator required for verification</p>
+              <p><strong>Cons:</strong> RPC must always be available, gas costs for every cert, harder UX, requires always-online Ethereum connection</p>
+              <p><span class="risk-indicator risk-high"></span>Effort: 4+ weeks (full redesign)</p>
+            </div>
+          </div>
+          <p><strong>Recommendation:</strong> Option A — DB authoritative with blockchain as audit log. The backend calls the contract via Web3.py after DB commit, storing the tx_hash. Verifiers can cross-reference either system, with blockchain providing immutable proof.</p>
+        </div>
+      </div>
+
+      <div class="section" id="risk-mitigations">
+        <h2>Risk Mitigations</h2>
+        <h3>Immediate (do before next commit)</h3>
+        <ul>
+          <li><strong>Missing /health endpoint:</strong> Add the 5-line route to backend/app.py. This is a deploy-blocker — without it, every deployment crashes.</li>
+          <li><strong>CORS in production:</strong> Add ALLOWED_ORIGINS env var to k8s/base/backend/deployment.yaml pointing to the production frontend URL.</li>
+        </ul>
+        <h3>This Sprint</h3>
+        <ul>
+          <li><strong>Rate limiting:</strong> Add <code>flask-limiter</code> to requirements.txt and decorate login routes with <code>@limiter.limit("5 per minute")</code>. This directly reduces brute-force attack surface.</li>
+          <li><strong>CI/CD deployment:</strong> Add GitHub Actions steps to authenticate with ECR, push Docker images, and update <code>k8s/overlays/dev/kustomization.yaml</code> image tags. ArgoCD will then sync automatically on every push to main.</li>
+          <li><strong>Increase replicas:</strong> Change replicas from 1 to 2 in both backend and frontend deployments. Pair this with a Redis session store to prevent session loss.</li>
+        </ul>
+        <h3>Next Quarter</h3>
+        <ul>
+          <li><strong>Certificate state synchronization:</strong> Implement a background service that calls the Ethereum contract via Web3.py after every DB certificate issuance. Store the blockchain tx_hash in the certi table. Add a reconciliation job that flags DB-only or chain-only certificates.</li>
+          <li><strong>Blockchain pagination:</strong> Add <code>getCertificatesPaginated(uint256 offset, uint256 limit)</code> to CertificateIssuer.sol before certificate count exceeds 500. This is the last opportunity to avoid a contract migration.</li>
+          <li><strong>Test suite:</strong> Add pytest tests for all 8 API routes covering happy path, auth enforcement, and error cases. Set CI flake8 to fail (remove continue-on-error).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="footer-logo">
+        <img class="logo-light" src="https://agent.opsera.ai/opsera_logo_transparent.png" alt="Opsera">
+        <img class="logo-dark" src="https://agent.opsera.ai/opsera_logo_white_horizontal.png" alt="Opsera">
+      </div>
+      Generated by Opsera DevOps Agent | Architecture Analysis
+    </div>
+    </div>
+  </div>
+
+  <div class="diagram-overlay" id="diagramOverlay">
+    <div class="diagram-overlay-content" id="diagramOverlayContent">
+      <button class="diagram-overlay-close" id="diagramOverlayClose">&times;</button>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      var html = document.documentElement;
+      var current = html.getAttribute('data-theme');
+      var next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      try { localStorage.setItem('opsera-report-theme', next); } catch(e) {}
+      updateMermaidTheme(next);
+    }
+    function updateMermaidTheme(theme) {
+      if (typeof mermaid === 'undefined') return;
+      var isDark = theme === 'dark';
+      mermaid.initialize({
+        startOnLoad: false, theme: isDark ? 'dark' : 'neutral', securityLevel: 'loose',
+        flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis', padding: 20, nodeSpacing: 50, rankSpacing: 60 },
+        sequence: { useMaxWidth: false, actorMargin: 80, messageFontSize: 14, noteFontSize: 13, width: 200 },
+        er: { useMaxWidth: false, fontSize: 14 },
+        themeVariables: isDark ? {
+          fontSize: '15px', fontFamily: 'Inter, sans-serif',
+          background: '#1e2028', primaryColor: '#3b2e5a', primaryTextColor: '#e2e8f0',
+          primaryBorderColor: '#9947EB', secondaryColor: '#1a3a2a', secondaryTextColor: '#e2e8f0',
+          secondaryBorderColor: '#00AA84', tertiaryColor: '#3a3020', tertiaryTextColor: '#e2e8f0',
+          tertiaryBorderColor: '#CF940C', lineColor: '#8888aa', textColor: '#e2e8f0',
+          mainBkg: '#1e2028', nodeBorder: '#9947EB', clusterBkg: '#262830', clusterBorder: '#3e4050',
+          titleColor: '#e2e8f0',
+          actorBkg: '#3b2e5a', actorBorder: '#9947EB', actorTextColor: '#e2e8f0', actorLineColor: '#8888aa',
+          signalColor: '#8888aa', signalTextColor: '#e2e8f0',
+          noteBkgColor: '#3a3020', noteTextColor: '#e2e8f0', noteBorderColor: '#CF940C'
+        } : {
+          fontSize: '15px', fontFamily: 'Inter, sans-serif',
+          background: '#ffffff', primaryColor: '#ede5f7', primaryTextColor: '#3D3B36',
+          primaryBorderColor: '#9947EB', secondaryColor: '#e6f7f2', secondaryTextColor: '#3D3B36',
+          secondaryBorderColor: '#00AA84', tertiaryColor: '#fdf4e0', tertiaryTextColor: '#3D3B36',
+          tertiaryBorderColor: '#CF940C', lineColor: '#67788d', textColor: '#3D3B36',
+          mainBkg: '#ffffff', nodeBorder: '#9947EB', clusterBkg: '#F3F3F1', clusterBorder: '#E6E5E3',
+          titleColor: '#3D3B36',
+          actorBkg: '#ede5f7', actorBorder: '#9947EB', actorTextColor: '#3D3B36', actorLineColor: '#67788d',
+          signalColor: '#67788d', signalTextColor: '#3D3B36',
+          noteBkgColor: '#fdf4e0', noteTextColor: '#3D3B36', noteBorderColor: '#CF940C'
+        }
+      });
+    }
+    (function() {
+      try {
+        var saved = localStorage.getItem('opsera-report-theme');
+        if (saved) document.documentElement.setAttribute('data-theme', saved);
+      } catch(e) {}
+    })();
+    mermaid.initialize({
+      startOnLoad: true, theme: 'neutral', securityLevel: 'loose',
+      flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis', padding: 20, nodeSpacing: 50, rankSpacing: 60 },
+      sequence: { useMaxWidth: false, actorMargin: 80, messageFontSize: 14, noteFontSize: 13, width: 200 },
+      er: { useMaxWidth: false, fontSize: 14 },
+      themeVariables: {
+        fontSize: '15px', fontFamily: 'Inter, sans-serif',
+        background: '#ffffff', primaryColor: '#ede5f7', primaryTextColor: '#3D3B36',
+        primaryBorderColor: '#9947EB', secondaryColor: '#e6f7f2', secondaryTextColor: '#3D3B36',
+        secondaryBorderColor: '#00AA84', tertiaryColor: '#fdf4e0', tertiaryTextColor: '#3D3B36',
+        tertiaryBorderColor: '#CF940C', lineColor: '#67788d', textColor: '#3D3B36',
+        mainBkg: '#ffffff', nodeBorder: '#9947EB', clusterBkg: '#F3F3F1', clusterBorder: '#E6E5E3',
+        titleColor: '#3D3B36',
+        actorBkg: '#ede5f7', actorBorder: '#9947EB', actorTextColor: '#3D3B36', actorLineColor: '#67788d',
+        signalColor: '#67788d', signalTextColor: '#3D3B36',
+        noteBkgColor: '#fdf4e0', noteTextColor: '#3D3B36', noteBorderColor: '#CF940C'
+      }
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+      // Diagram zoom
+      document.querySelectorAll('.diagram-container').forEach(function(container) {
+        var hint = document.createElement('span');
+        hint.className = 'zoom-hint'; hint.textContent = 'Click to zoom';
+        container.appendChild(hint);
+        container.addEventListener('click', function(e) {
+          if (e.target.closest('.diagram-overlay')) return;
+          var svg = container.querySelector('.mermaid svg');
+          if (!svg) return;
+          var overlay = document.getElementById('diagramOverlay');
+          var content = document.getElementById('diagramOverlayContent');
+          var existingSvg = content.querySelector('svg');
+          if (existingSvg) existingSvg.remove();
+          var clone = svg.cloneNode(true);
+          clone.style.minHeight = '600px'; clone.style.width = '100%';
+          content.appendChild(clone);
+          overlay.classList.add('active');
+        });
+      });
+      document.getElementById('diagramOverlay').addEventListener('click', function(e) {
+        if (e.target === this || e.target.id === 'diagramOverlayClose') this.classList.remove('active');
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') document.getElementById('diagramOverlay').classList.remove('active');
+      });
+
+      // Sidebar: active section tracking
+      var links = document.querySelectorAll('.sidebar-link[href^="#"]');
+      var sections = [];
+      links.forEach(function(link) {
+        var id = link.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) sections.push({ id: id, el: el, link: link });
+      });
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            links.forEach(function(l) { l.classList.remove('active'); });
+            var match = sections.find(function(s) { return s.el === entry.target; });
+            if (match) {
+              match.link.classList.add('active');
+              match.link.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+          }
+        });
+      }, { rootMargin: '-10% 0px -80% 0px', threshold: 0 });
+      sections.forEach(function(s) { observer.observe(s.el); });
+
+      // Mobile sidebar toggle
+      var sidebar = document.getElementById('sidebar');
+      var toggle = document.getElementById('sidebarToggle');
+      var overlay = document.getElementById('sidebarOverlay');
+      function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+      toggle.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+      });
+      overlay.addEventListener('click', closeSidebar);
+      links.forEach(function(link) {
+        link.addEventListener('click', function() {
+          if (window.innerWidth <= 900) closeSidebar();
+        });
+      });
+    });
+  </script>
+</body>
+</html>

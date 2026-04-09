@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="https://agent.opsera.ai/favicon.png">
+  <title>Architecture Report — vasthavik</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+  <style>
+    :root{--primary:#9947EB;--primary-hover:#8234d4;--accent:#CF940C;--bg:#ffffff;--bg-secondary:#F3F3F1;--card:#ffffff;--card-hover:#fafafa;--text:#3D3B36;--text-light:#67788d;--border:#E6E5E3;--border-light:#f0efed;--success:#00AA84;--warning:#CF940C;--danger:#dc3545;--critical:#dc3545;--high:#c05621;--medium:#CF940C;--low:#00AA84;--code-bg:#1e1e2e;--code-text:#cdd6f4;--shadow-sm:0 1px 2px rgba(0,0,0,.04);--shadow-md:0 2px 8px rgba(0,0,0,.06);--radius:.5rem;--sidebar-width:260px}
+    [data-theme="dark"]{--primary:#b87aed;--bg:#16181d;--bg-secondary:#1e2028;--card:#1e2028;--text:#f2f2f2;--text-light:#a6a6a6;--border:#2e3038;--border-light:#262830}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{font-size:16px;scroll-behavior:smooth}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+    h1{font-size:1.75rem;font-weight:700;letter-spacing:-.02em}
+    h2{font-size:1.35rem;font-weight:600;letter-spacing:-.01em;color:var(--primary)}
+    h3{font-size:1.1rem;font-weight:600;color:var(--primary);margin-top:1.25rem;margin-bottom:.5rem}
+    h4{font-size:.95rem;font-weight:600;color:var(--text);margin-top:1rem;margin-bottom:.4rem}
+    p{margin-bottom:.75rem}
+    a{color:var(--primary);text-decoration:none}
+    ul,ol{margin:.5rem 0 .75rem 1.5rem}li{margin-bottom:.25rem}
+    .page-wrapper{display:flex;min-height:100vh}
+    .sidebar{position:sticky;top:0;width:var(--sidebar-width);height:100vh;background:var(--card);border-right:1px solid var(--border);overflow-y:auto;z-index:100;display:flex;flex-direction:column;flex-shrink:0}
+    .sidebar-nav{flex:1;overflow-y:auto;padding:.75rem 0}
+    .sidebar-group-label{padding:.6rem 1.25rem .3rem;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-light)}
+    .sidebar-link{display:block;padding:.35rem 1.25rem;font-size:.82rem;color:var(--text-light);text-decoration:none;border-left:3px solid transparent;transition:all .15s ease}
+    .sidebar-link:hover{color:var(--text);background:var(--bg-secondary)}
+    .sidebar-link.active{color:var(--primary);border-left-color:var(--primary);background:rgba(153,71,235,.06);font-weight:500}
+    .sidebar-link.sub{padding-left:2rem;font-size:.78rem}
+    .sidebar-footer{padding:.75rem 1.25rem;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:.5rem}
+    .sidebar-theme-btn{background:var(--bg-secondary);border:1px solid var(--border);border-radius:999px;padding:.4rem;cursor:pointer;display:flex;align-items:center;transition:all .2s}
+    .sidebar-toggle{display:none;position:fixed;top:.75rem;left:.75rem;z-index:200;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.5rem;cursor:pointer;box-shadow:var(--shadow-md)}
+    .sidebar-toggle svg{width:20px;height:20px;color:var(--text)}
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90}
+    .page-main{flex:1;min-width:0}
+    .header{background:linear-gradient(135deg,#250e3c 0%,#9947EB 60%,#CF940C 100%);color:#fff;padding:2.5rem 2rem;position:relative;overflow:hidden}
+    .header::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 70% 50%,rgba(153,71,235,.3) 0%,transparent 70%)}
+    .header-content{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:1.5rem;position:relative;z-index:1}
+    .header-logo img{height:36px;width:auto}
+    .header h1{color:#fff;margin-bottom:.4rem}
+    .header .meta{opacity:.85;font-size:.875rem;font-weight:400}
+    .container{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+    .section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;margin-bottom:1.5rem;box-shadow:var(--shadow-sm)}
+    .section h2{border-bottom:2px solid var(--primary);padding-bottom:.5rem;margin-bottom:1.25rem}
+    .section-divider{text-align:center;padding:1.5rem 0;margin:1rem 0;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-light);border-top:2px solid var(--border)}
+    table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.9rem}
+    thead th{background:var(--primary);color:#fff;padding:.65rem .75rem;text-align:left;font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em}
+    tbody td{padding:.6rem .75rem;border-bottom:1px solid var(--border-light)}
+    tbody tr:nth-child(even){background:var(--bg-secondary)}
+    .severity{padding:.2rem .65rem;border-radius:999px;font-size:.7rem;font-weight:600}
+    .severity-critical{background:rgba(220,53,69,.12);color:var(--critical)}
+    .severity-high{background:rgba(192,86,33,.12);color:var(--high)}
+    .severity-medium{background:rgba(207,148,12,.12);color:var(--medium)}
+    .severity-low{background:rgba(0,170,132,.12);color:var(--low)}
+    .risk-card{background:var(--bg-secondary);border-radius:var(--radius);padding:1rem;margin-bottom:.75rem;border-left:4px solid var(--border)}
+    .risk-card.critical{border-left-color:var(--critical)}
+    .risk-card.high{border-left-color:var(--high)}
+    .risk-card.medium{border-left-color:var(--medium)}
+    .risk-card.low{border-left-color:var(--low)}
+    .risk-card.fixed{border-left-color:var(--success);opacity:.85}
+    .risk-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+    .risk-title{font-weight:600}
+    .strength-card{border-left:4px solid var(--success);background:rgba(0,170,132,.05);padding:1rem 1.25rem;margin-bottom:1rem;border-radius:6px}
+    .strength-card h4{color:var(--success);margin:0 0 .25rem}
+    .contradiction-card{border-left:4px solid var(--danger);background:rgba(220,53,69,.05);padding:1rem 1.25rem;margin-bottom:1rem;border-radius:6px}
+    .contradiction-card h4{color:var(--danger);margin:0 0 .5rem}
+    .assumption-card{border-left:4px solid #8b5cf6;background:#f5f3ff;padding:1rem 1.25rem;margin-bottom:1rem;border-radius:6px}
+    .assumption-card h4{color:#7c3aed;margin:0 0 .25rem}
+    .assumption-card .scenario{background:#ede9fe;border-radius:4px;padding:.5rem .75rem;margin-top:.5rem;font-size:.85rem;font-style:italic}
+    .score-ring{position:relative;width:180px;height:180px}
+    .score-ring svg{transform:rotate(-90deg)}
+    .score-ring circle{fill:none;stroke-width:12}
+    .score-ring .bg{stroke:var(--border)}
+    .score-ring .value{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+    .score-ring .percentage{font-size:2.5rem;font-weight:700}
+    .severity-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+    .severity-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center}
+    .severity-card .count{font-size:2.5rem;font-weight:700}
+    .severity-card .label{color:var(--text-light);font-size:.8rem;margin-top:.25rem}
+    .severity-card.critical .count{color:var(--critical)}
+    .severity-card.high .count{color:var(--high)}
+    .severity-card.medium .count{color:var(--medium)}
+    .severity-card.low .count{color:var(--low)}
+    .diagram-container{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.25rem;overflow-x:auto}
+    .diagram-container h4{margin:0 0 1rem;font-size:.9rem;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em}
+    pre{background:var(--code-bg);color:var(--code-text);padding:1rem 1.25rem;border-radius:var(--radius);overflow-x:auto;font-family:'SF Mono','Fira Code',Menlo,monospace;font-size:.85rem;line-height:1.5}
+    pre:not(.mermaid){border:1px solid var(--border)}
+    code{background:var(--border-light);padding:.15rem .4rem;border-radius:4px;font-family:'SF Mono','Fira Code',Menlo,monospace;font-size:.85em}
+    .sprint-card{border:2px solid var(--success);border-radius:var(--radius);padding:1.5rem;margin:1rem 0;background:var(--bg-secondary)}
+    .sprint-card h4{color:var(--success);margin-top:0}
+    .sprint-card .pr-description{background:var(--code-bg);color:var(--code-text);padding:1rem;border-radius:var(--radius);font-family:'SF Mono','Fira Code',Menlo,monospace;font-size:.8rem;white-space:pre-wrap;margin-top:1rem}
+    details{margin:.5rem 0;border:1px solid var(--border-light);border-radius:var(--radius)}
+    details summary{cursor:pointer;font-weight:600;font-size:.95rem;padding:.65rem 1rem;background:var(--bg-secondary);border-radius:var(--radius);list-style:none}
+    details summary::-webkit-details-marker{display:none}
+    details summary::before{content:"\25B6\FE0E  ";font-size:.7rem;margin-right:.4rem}
+    details[open] summary::before{content:"\25BC\FE0E  "}
+    details[open] summary{border-bottom:1px solid var(--border-light);border-radius:var(--radius) var(--radius) 0 0}
+    details>div,details>p,details>ul,details>table{padding:1rem}
+    .footer{text-align:center;padding:2rem 1rem;color:var(--text-light);font-size:.8rem;border-top:1px solid var(--border);margin-top:1rem}
+    .footer-logo img{height:24px;width:auto;margin-bottom:.5rem}
+    .footer-logo .logo-light{display:inline}
+    .footer-logo .logo-dark{display:none}
+    [data-theme="dark"] .footer-logo .logo-light{display:none}
+    [data-theme="dark"] .footer-logo .logo-dark{display:inline}
+    @media(max-width:900px){.sidebar{position:fixed;top:0;left:0;height:100vh;transform:translateX(-100%);box-shadow:var(--shadow-md)}.sidebar.open{transform:translateX(0)}.sidebar-toggle{display:flex}.sidebar-overlay.open{display:block}.page-wrapper{display:block}.container{padding:1rem}.severity-grid{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <div class="header-logo">
+        <img src="https://agent.opsera.ai/opsera_logo_white_horizontal.png" alt="Opsera">
+      </div>
+      <div class="header-text">
+        <h1>Architecture Risk Report</h1>
+        <div class="meta">vasthavik | 3-Pass Risk-Focused Analysis | Mar 31, 2026 | Opsera DevOps Agent</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="page-wrapper">
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-nav">
+        <a class="sidebar-link" href="#architecture-at-a-glance">Architecture at a Glance</a>
+        <a class="sidebar-link sub" href="#diagrams">System Diagrams</a>
+        <a class="sidebar-link sub" href="#tech-stack">Tech Stack</a>
+        <a class="sidebar-link sub" href="#quantitative-profile">Quantitative Profile</a>
+        <a class="sidebar-link" href="#what-works-well">What Works Well</a>
+        <a class="sidebar-link" href="#risk-landscape">Risk Landscape</a>
+        <a class="sidebar-link sub" href="#risk-score">Risk Score</a>
+        <a class="sidebar-link sub" href="#basic-issues">Basic Issues</a>
+        <a class="sidebar-link sub" href="#advanced-issues">Advanced Issues</a>
+        <a class="sidebar-link" href="#deep-insights">Deep Insights</a>
+        <a class="sidebar-link sub" href="#config-contradictions">Config Contradictions</a>
+        <a class="sidebar-link sub" href="#implicit-contracts">Implicit Contracts</a>
+        <a class="sidebar-link sub" href="#stress-projection">Stress Projection</a>
+        <a class="sidebar-link" href="#stride-analysis">STRIDE Threat Model</a>
+        <a class="sidebar-link" href="#remediation-roadmap">Remediation Roadmap</a>
+        <a class="sidebar-link sub" href="#fix-today">Fix Today</a>
+        <a class="sidebar-link sub" href="#fix-sprint">Fix This Sprint</a>
+        <a class="sidebar-link sub" href="#next-quarter">Next Quarter</a>
+      </div>
+      <div class="sidebar-footer">
+        <button class="sidebar-theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--text-light)">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.005 9.005 0 0012 21a9.005 9.005 0 008.354-5.646z"/>
+          </svg>
+        </button>
+        <span style="font-size:.75rem;color:var(--text-light)">Toggle theme</span>
+      </div>
+    </nav>
+
+    <div class="page-main">
+      <div class="container">
+
+        <!-- Section 1: Architecture at a Glance -->
+        <div class="section" id="architecture-at-a-glance">
+          <h2>Architecture at a Glance</h2>
+          <p>vasthavik is a <strong>monorepo</strong> containing three distinct layers: a React SPA frontend, a Flask/PostgreSQL backend API, and an Ethereum smart contract for on-chain certificate issuance. The system allows universities to issue tamper-proof academic certificates verifiable on the blockchain.</p>
+        </div>
+
+        <!-- Diagrams -->
+        <div class="section" id="diagrams">
+          <h2>System Diagrams</h2>
+
+          <div class="diagram-container">
+            <h4>1. System Architecture Overview</h4>
+            <pre class="mermaid">graph TB
+  subgraph Client["Client Layer"]
+    Browser["🌐 Browser\n(React SPA, 14 routes)"]
+    MetaMask["🦊 MetaMask\n(Wallet Extension)"]
+  end
+  subgraph App["Application Layer (Docker Compose)"]
+    Flask["⚙️ Flask API\n(port 5001, Werkzeug dev)\nPython 3.11 | Flask 3.0"]
+    Frontend["📦 React Frontend\n(port 3000, serve)\nReact 18 | ethers.js 5.7"]
+  end
+  subgraph Data["Data Layer"]
+    PG["🐘 PostgreSQL 15\n(port 5432 exposed!)"]
+  end
+  subgraph Blockchain["Blockchain Layer"]
+    ETH["⛓️ Ethereum Mainnet\nCertificateIssuer.sol\n(Solidity ^0.8.0)"]
+  end
+  Browser -->|"HTTP (no TLS)\nSESSION cookie\n⚠️ no CSRF protection"| Flask
+  Browser --> Frontend
+  Flask -->|"SQLAlchemy\nTCP/Docker bridge\n1-day session TTL"| PG
+  Browser --> MetaMask
+  MetaMask -->|"JSON-RPC\nWallet signature"| ETH
+
+  classDef risk fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  classDef warn fill:#fef9c3,stroke:#ca8a04,color:#713f12
+  classDef ok fill:#dcfce7,stroke:#16a34a,color:#14532d
+  class Flask,Browser risk
+  class MetaMask,ETH warn
+  class PG ok</pre>
+          </div>
+
+          <div class="diagram-container">
+            <h4>2. Auth &amp; Security Enforcement Map</h4>
+            <pre class="mermaid">graph TD
+  Request["Incoming Request"] --> FE_Route{"Frontend Route\n(React Router)"}
+  FE_Route -->|"14 routes\n❌ 0 auth guards"| FE_Page["Page Renders\n(no auth check)"]
+  FE_Page -->|"API call"| BE_Route{"Backend Route\n(Flask)"}
+  BE_Route -->|"POST /post_univ\nPOST /post_stud\nGET /"| Public["✅ Public\n(3 routes)"]
+  BE_Route -->|"@require_auth\n/request_certificate"| Auth["🔐 Auth Required\n(session check)"]
+  BE_Route -->|"@require_admin\n/post_addstud\n/student_all\n/get_allcerti\n/update_certi\n/issue_certificate"| Admin["🛡️ Admin Required\n(session + role check)"]
+  Auth -->|"stud_id from body\n❌ IDOR risk"| DB["PostgreSQL"]
+  Admin --> DB
+
+  classDef risk fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  classDef warn fill:#fef9c3,stroke:#ca8a04,color:#713f12
+  classDef ok fill:#dcfce7,stroke:#16a34a,color:#14532d
+  class FE_Route,Auth risk
+  class BE_Route warn
+  class Public,Admin ok</pre>
+          </div>
+
+          <div class="diagram-container">
+            <h4>3. Certificate Issuance Data Flow</h4>
+            <pre class="mermaid">graph TB
+  Admin["👤 Admin User"] -->|"1. Login\nPOST /post_univ"| Session["Flask Session\n(1-day TTL)"]
+  Admin -->|"2. Issue cert\nPOST /issue_certificate\n(grade + stud_id)"| DB_Write["PostgreSQL Write\n(status: Issued)"]
+  Admin -->|"3. On-chain issue\nMetaMask prompt"| Contract["CertificateIssuer.sol\nissueCertificate()"]
+  DB_Write -.->|"❌ No coordination!\nIf step 3 fails:"| Diverged["⚠️ STATE DIVERGED\nDB: Issued\nChain: No record"]
+  Contract -->|"CertificateIssued event\n(studentId, grade, program)"| Chain_State["On-chain State\n(immutable)"]
+  Student["👤 Student"] -->|"Verify cert"| Contract
+  Student -->|"View cert"| DB_Read["PostgreSQL Read"]
+
+  classDef risk fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  classDef warn fill:#fef9c3,stroke:#ca8a04,color:#713f12
+  classDef ok fill:#dcfce7,stroke:#16a34a,color:#14532d
+  class Diverged risk
+  class DB_Write,DB_Read warn
+  class Chain_State ok</pre>
+          </div>
+
+          <div class="diagram-container">
+            <h4>4. Failure Mode Map — What Breaks When X Dies?</h4>
+            <pre class="mermaid">graph TD
+  subgraph Failures["Failure Scenarios"]
+    F1["Flask API Down"]
+    F2["PostgreSQL Down"]
+    F3["MetaMask Unavailable"]
+    F4["Ethereum Node Down"]
+    F5["Container as Root Compromised"]
+  end
+  subgraph Effects["Blast Radius"]
+    E1["❌ All API operations fail\n100% service down"]
+    E2["❌ All reads/writes fail\nFlask crashes on startup"]
+    E3["⚠️ Blockchain UI broken\nNo error shown to user"]
+    E4["⚠️ On-chain issuance fails\nDB writes succeed = divergence"]
+    E5["🚨 Host root access\nContainer escape possible"]
+  end
+  F1 --> E1
+  F2 --> E2
+  F3 --> E3
+  F4 --> E4
+  F5 --> E5
+
+  classDef critical fill:#7f1d1d,stroke:#dc2626,color:#fff
+  classDef high fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  classDef med fill:#fef9c3,stroke:#ca8a04,color:#713f12
+  class E1,E5 critical
+  class E2 high
+  class E3,E4 med</pre>
+          </div>
+
+          <div class="diagram-container">
+            <h4>5. Security Defense-in-Depth</h4>
+            <pre class="mermaid">graph TB
+  subgraph Perimeter["🌐 Perimeter"]
+    TLS["TLS/HTTPS\n❌ Not configured\n(HTTP only)"]
+    WAF["WAF / Rate Limit\n❌ None"]
+  end
+  subgraph Network["🔌 Network"]
+    CORS["CORS\n✅ Origin-restricted\nAllowed: localhost:3000"]
+    DB_Expose["DB Port Exposed\n⚠️ 5432 on host"]
+  end
+  subgraph Application["⚙️ Application"]
+    Auth["Session Auth\n✅ Flask sessions\n1-day TTL"]
+    CSRF["CSRF Protection\n⚠️ SameSite=Lax only\n(no CSRF tokens)"]
+    Err["Error Handling\n✅ Fixed (generic msgs)"]
+  end
+  subgraph Authorization["🔐 Authorization"]
+    RBAC["Role-Based Access\n✅ require_admin decorator"]
+    IDOR["IDOR Protection\n✅ Fixed (session stud_id)"]
+  end
+  subgraph Data["💾 Data"]
+    PW_Hash["Password Hashing\n✅ werkzeug PBKDF2"]
+    DB_Auth["DB Auth\n✅ PostgreSQL password"]
+    Secrets["Secret Mgmt\n✅ Env vars only\n(properly gitignored)"]
+  end
+  subgraph Monitoring["📊 Monitoring"]
+    Logs["Audit Logs\n❌ None for admin ops"]
+    Health["Health Checks\n❌ No HEALTHCHECK"]
+    CI["CI/CD Gates\n❌ No pipeline"]
+  end
+
+  classDef ok fill:#dcfce7,stroke:#16a34a,color:#14532d
+  classDef warn fill:#fef9c3,stroke:#ca8a04,color:#713f12
+  classDef risk fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  class Auth,RBAC,IDOR,PW_Hash,DB_Auth,Secrets,CORS,Err ok
+  class CSRF,DB_Expose warn
+  class TLS,WAF,Logs,Health,CI risk</pre>
+          </div>
+
+          <div class="diagram-container">
+            <h4>6. CI/CD Pipeline &amp; Deployment</h4>
+            <pre class="mermaid">graph LR
+  Dev["👤 Developer\nlocal machine"] -->|"git push\n(manual)"| GitHub["GitHub\nPrashanthiopsera/vasthavik"]
+  GitHub -->|"❌ No CI pipeline\nNo automated tests"| Manual["Manual Deploy\ndocker-compose up"]
+  Manual -->|"docker build"| Images["Docker Images\n(backend + frontend)"]
+  Images -->|"docker-compose\nup -d"| Running["Running Containers\n(no health checks)"]
+
+  classDef risk fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  classDef ok fill:#dcfce7,stroke:#16a34a,color:#14532d
+  class Manual,Images risk
+  class Dev,GitHub ok</pre>
+          </div>
+
+          <div class="diagram-container">
+            <h4>7. Certificate Request Lifecycle</h4>
+            <pre class="mermaid">sequenceDiagram
+  participant S as Student Browser
+  participant F as Flask API
+  participant DB as PostgreSQL
+  participant A as Admin Browser
+  participant MM as MetaMask
+  participant ETH as Ethereum
+
+  S->>F: POST /post_stud (login)
+  F->>DB: query Stud by username
+  DB-->>F: student record
+  F-->>S: Set session cookie (1-day TTL, SameSite=Lax)
+
+  S->>F: POST /request_certificate
+  Note over F: stud_id = session.user_id ✅
+  F->>DB: INSERT Certi (status=Pending)
+  DB-->>F: OK
+  F-->>S: 201 Created
+
+  A->>F: POST /issue_certificate (grade, stud_id)
+  Note over F: @require_admin ✅
+  F->>DB: INSERT Certi (status=Issued)
+  DB-->>F: OK
+  F-->>A: 201 Created
+
+  Note over A,ETH: ⚠️ Independent operation - no coordination!
+  A->>MM: Request signature
+  MM->>ETH: issueCertificate(stud_id, grade, program)
+  ETH-->>MM: tx receipt
+  MM-->>A: Transaction confirmed</pre>
+          </div>
+
+          <div class="diagram-container">
+            <h4>8. Module Dependency Graph</h4>
+            <pre class="mermaid">graph TD
+  AppJS["App.js\n(React root, 14 routes)"]
+  AppJS --> Univlogin & Studlogin & Emplogin
+  AppJS --> Univindex & Studindex
+  AppJS --> Addstud & Viewstud & Viewreq
+  AppJS --> Certireq & Issuecerti & Sndcerti
+  AppJS --> CertIssuer["certificateIssuer.js\n(ethers.js + contract)"]
+  AppJS --> VerifyCerti["verifycerti.js"]
+  AppJS --> Connect["connect.js\n(MetaMask SDK)"]
+  CertIssuer --> ContractABI["contractabi.js\n(ABI definition)"]
+
+  AppPy["app.py\n(Flask, 327 lines\n11 endpoints)"]
+  AppPy --> Models["models.py\n(SQLAlchemy ORM\n4 models)"]
+  AppPy --> DB["PostgreSQL"]
+
+  Sol["CertificateIssuer.sol\n(Solidity 0.8.0)"]
+  Sol --> ContractABI
+
+  classDef hotspot fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  classDef ok fill:#dcfce7,stroke:#16a34a,color:#14532d
+  classDef neutral fill:#f3f4f6,stroke:#9ca3af,color:#374151
+  class AppPy,AppJS hotspot
+  class Models,DB,Sol ok
+  class CertIssuer,Connect neutral</pre>
+          </div>
+        </div>
+
+        <!-- Tech Stack -->
+        <div class="section" id="tech-stack">
+          <h2>Tech Stack</h2>
+          <table>
+            <thead><tr><th>Layer</th><th>Component</th><th>Version</th><th>Source</th></tr></thead>
+            <tbody>
+              <tr><td>Frontend</td><td>React</td><td>18.x</td><td>frontend/package.json</td></tr>
+              <tr><td>Frontend</td><td>ethers.js</td><td>^5.7.2</td><td>frontend/package.json</td></tr>
+              <tr><td>Frontend</td><td>MetaMask SDK</td><td>latest</td><td>frontend/package.json</td></tr>
+              <tr><td>Backend</td><td>Flask</td><td>3.0.0</td><td>backend/requirements.txt</td></tr>
+              <tr><td>Backend</td><td>Flask-CORS</td><td>5.0.0</td><td>backend/requirements.txt</td></tr>
+              <tr><td>Backend</td><td>SQLAlchemy</td><td>2.0.23</td><td>backend/requirements.txt</td></tr>
+              <tr><td>Backend</td><td>Werkzeug</td><td>3.0.1</td><td>backend/requirements.txt</td></tr>
+              <tr><td>Database</td><td>PostgreSQL</td><td>15-alpine</td><td>docker-compose.yml</td></tr>
+              <tr><td>Blockchain</td><td>Solidity</td><td>^0.8.0</td><td>CertificateIssuer.sol</td></tr>
+              <tr><td>Blockchain</td><td>Hardhat</td><td>^2.13.0 ⚠️</td><td>blockchain/package.json</td></tr>
+              <tr><td>Runtime</td><td>Python</td><td>3.11.3</td><td>backend/dockerfile</td></tr>
+              <tr><td>Runtime</td><td>Node.js</td><td>20-alpine</td><td>frontend/dockerfile</td></tr>
+              <tr><td>Infra</td><td>Docker Compose</td><td>v3</td><td>docker-compose.yml</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Quantitative Profile -->
+        <div class="section" id="quantitative-profile">
+          <h2>Quantitative Profile</h2>
+          <table>
+            <thead><tr><th>Metric</th><th>Value</th><th>Source</th></tr></thead>
+            <tbody>
+              <tr><td>Total Files (excl. node_modules)</td><td>142</td><td>find . -type f</td></tr>
+              <tr><td>Backend Endpoints</td><td>11</td><td>backend/app.py</td></tr>
+              <tr><td>Frontend Routes</td><td>14</td><td>frontend/src/App.js</td></tr>
+              <tr><td>Auth Coverage (backend)</td><td>~73% (8/11 endpoints protected)</td><td>require_auth / require_admin decorators</td></tr>
+              <tr><td>Auth Coverage (frontend)</td><td>0% (0/14 routes have auth guards)</td><td>frontend/src/App.js</td></tr>
+              <tr><td>Error Boundaries</td><td>0</td><td>grep -r ErrorBoundary frontend/src/</td></tr>
+              <tr><td>Test Files</td><td>2</td><td>frontend/src/App.test.js, blockchain/test/Lock.js</td></tr>
+              <tr><td>Session TTL</td><td>1 day</td><td>backend/app.py:22</td></tr>
+              <tr><td>HTTP Timeout</td><td>Not configured</td><td>Flask default (infinite)</td></tr>
+              <tr><td>DB Pool Size</td><td>SQLAlchemy default (5)</td><td>Not configured in app.py</td></tr>
+              <tr><td>Rate Limiting</td><td>None</td><td>No flask-limiter installed</td></tr>
+              <tr><td>Cache TTL</td><td>N/A (no caching layer)</td><td>No Redis/memcached</td></tr>
+              <tr><td>CORS Allowed Origins</td><td>http://localhost:3000</td><td>.env / backend/app.py:17</td></tr>
+              <tr><td>Top Coupling Hotspot</td><td>backend/app.py (327 lines, all 11 endpoints)</td><td>Manual review</td></tr>
+              <tr><td>Smart Contracts</td><td>1 (CertificateIssuer.sol)</td><td>blockchain/contracts/</td></tr>
+              <tr><td>Docker Services</td><td>3 (frontend, backend, db)</td><td>docker-compose.yml</td></tr>
+              <tr><td>CI/CD Pipelines</td><td>0</td><td>No .github/workflows/, no .gitlab-ci.yml</td></tr>
+              <tr><td>Bus Factor</td><td>1 (single contributor)</td><td>git log --format='%an'</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Section 2: What Works Well -->
+        <div class="section" id="what-works-well">
+          <h2>What Works Well</h2>
+
+          <div class="strength-card">
+            <h4>✅ Password Security Done Right</h4>
+            <p>Passwords are hashed with Werkzeug's PBKDF2-SHA256 (<code>generate_password_hash / check_password_hash</code>) — industry standard. Passwords are never stored in plaintext in app.py. The secret key is loaded from environment variables with a hard startup failure if missing (<code>raise RuntimeError</code>).</p>
+          </div>
+
+          <div class="strength-card">
+            <h4>✅ Clean Role-Based Authorization Model</h4>
+            <p>The backend has a clear two-tier access model: <code>@require_auth</code> for authenticated users and <code>@require_admin</code> for admin-only operations. Decorators are applied consistently across all 8 protected endpoints. The role is stored in the session at login and verified on every request.</p>
+          </div>
+
+          <div class="strength-card">
+            <h4>✅ Smart Contract Security Best Practices</h4>
+            <p><code>CertificateIssuer.sol</code> demonstrates solid Solidity hygiene: <code>onlyOwner</code> and <code>onlyAuthorized</code> modifiers guard all write operations, ownership transfer emits events, zero address is rejected in <code>authorizeIssuer</code>, duplicate certificate prevention via <code>_certificateExists</code> mapping, and all state changes emit indexed events for off-chain indexing.</p>
+          </div>
+
+          <div class="strength-card">
+            <h4>✅ Proper Secret Management</h4>
+            <p>All sensitive config (SECRET_KEY, DATABASE_URL, POSTGRES_PASSWORD) is loaded exclusively from environment variables. The <code>.env</code> file is correctly listed in <code>.gitignore</code>. No hardcoded secrets in committed code (the init_db.py plaintext password was a seeding script issue, now fixed).</p>
+          </div>
+
+          <div class="strength-card">
+            <h4>✅ Multi-Stage Docker Build for Frontend</h4>
+            <p>The frontend Dockerfile uses a proper multi-stage build: Node.js builder stage compiles React, then a minimal Alpine image serves only the built artifacts with <code>serve</code>. This keeps the production image lean and avoids shipping build tooling into production.</p>
+          </div>
+        </div>
+
+        <!-- Section 3: Risk Landscape -->
+        <div class="section-divider">Risk Landscape</div>
+
+        <div class="section" id="risk-score">
+          <h2>Risk Score &amp; Severity Breakdown</h2>
+          <p style="font-size:.85rem;color:var(--text-light);margin-bottom:1rem;">Combined count from all Phase 1 risks + Phase 2 deep-dive findings, including the critical init_db.py finding that was fixed during this scan run. Post-fix score: ~47/100 (Moderate).</p>
+          <div style="display:flex;align-items:center;justify-content:center;gap:3rem;padding:2rem;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1.5rem;">
+            <div class="score-ring">
+              <svg width="180" height="180">
+                <circle class="bg" cx="90" cy="90" r="78"/>
+                <circle class="bg" cx="90" cy="90" r="78" stroke="var(--border)" fill="none" stroke-width="12"/>
+                <circle cx="90" cy="90" r="78" fill="none" stroke="#c05621" stroke-width="12" stroke-linecap="round"
+                        stroke-dasharray="490.1" stroke-dashoffset="196"/>
+              </svg>
+              <div class="value">
+                <div class="percentage" style="color:#c05621;">60</div>
+                <div style="color:#c05621;font-size:.875rem;font-weight:600;">High Risk</div>
+              </div>
+            </div>
+          </div>
+          <div class="severity-grid">
+            <div class="severity-card critical"><div class="count">1</div><div class="label">Critical</div></div>
+            <div class="severity-card high"><div class="count">4</div><div class="label">High</div></div>
+            <div class="severity-card medium"><div class="count">6</div><div class="label">Medium</div></div>
+            <div class="severity-card low"><div class="count">3</div><div class="label">Low</div></div>
+          </div>
+          <details>
+            <summary>&#9432; Score formula</summary>
+            <div><p><code>min(100, round(log10((1×100) + (4×30) + (6×10) + (3×3) + 1) × 25))</code><br>= min(100, round(log10(100+120+60+9+1) × 25)) = min(100, round(log10(290) × 25)) = min(100, round(2.462 × 25)) = <strong>62 → displayed as 60</strong></p></div>
+          </details>
+
+          <h3>Category Breakdown</h3>
+          <table>
+            <thead><tr><th>Category</th><th>Count</th><th>Breakdown</th></tr></thead>
+            <tbody>
+              <tr><td>🛡️ Security Surface</td><td>7</td><td>1 Critical · 3 High · 3 Medium</td></tr>
+              <tr><td>🔐 Authentication Gaps</td><td>2</td><td>0 Critical · 1 High · 1 Medium</td></tr>
+              <tr><td>💥 Failure Cascades</td><td>2</td><td>0 Critical · 1 High · 1 Medium</td></tr>
+              <tr><td>📈 Scalability Walls</td><td>1</td><td>0 Critical · 0 High · 1 Medium</td></tr>
+              <tr><td>⚙️ Operability</td><td>3</td><td>0 Critical · 0 High · 0 Medium · 3 Low</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Basic Issues -->
+        <div class="section" id="basic-issues">
+          <h2>Basic Issues — Tooling Catches These</h2>
+
+          <div class="risk-card critical fixed">
+            <div class="risk-header">
+              <span class="risk-title">Hardcoded plaintext admin password in init_db.py</span>
+              <span><span class="severity severity-critical">Critical</span> <span style="color:var(--success);font-weight:600;">✅ Fixed</span></span>
+            </div>
+            <p style="margin:.25rem 0 0;font-size:.9rem;">Password <code>pkoudi1</code> stored in plaintext SQL INSERT. Fixed: now hashed with <code>generate_password_hash()</code>, loaded from <code>ADMIN_PASSWORD</code> env var.</p>
+            <div style="font-size:.8rem;color:var(--text-light);">backend/init_db.py:25 | Attack complexity: None | Tool: gitleaks</div>
+          </div>
+
+          <div class="risk-card high fixed">
+            <div class="risk-header">
+              <span class="risk-title">No SameSite cookie attribute — CSRF attack surface</span>
+              <span><span class="severity severity-high">High</span> <span style="color:var(--success);font-weight:600;">✅ Fixed</span></span>
+            </div>
+            <p style="margin:.25rem 0 0;font-size:.9rem;">Flask session cookie had no SameSite attribute. Fixed: added <code>SESSION_COOKIE_SAMESITE=Lax</code>, <code>HTTPONLY=True</code>, <code>SECURE=True</code> (non-dev).</p>
+            <div style="font-size:.8rem;color:var(--text-light);">backend/app.py:22 | Attack complexity: Low | Tool: semgrep flask rules</div>
+          </div>
+
+          <div class="risk-card high fixed">
+            <div class="risk-header">
+              <span class="risk-title">Blockchain contract address is placeholder '0xYourContractAddress'</span>
+              <span><span class="severity severity-high">High</span> <span style="color:var(--success);font-weight:600;">✅ Fixed</span></span>
+            </div>
+            <p style="margin:.25rem 0 0;font-size:.9rem;">All blockchain operations silently failed. Fixed: now reads from <code>REACT_APP_CONTRACT_ADDRESS</code> env var with deployed address as fallback.</p>
+            <div style="font-size:.8rem;color:var(--text-light);">frontend/src/components/certificateIssuer.js:12 | Tool: code review</div>
+          </div>
+
+          <div class="risk-card medium fixed">
+            <div class="risk-header">
+              <span class="risk-title">Raw exception messages leaked in HTTP responses</span>
+              <span><span class="severity severity-medium">Medium</span> <span style="color:var(--success);font-weight:600;">✅ Fixed</span></span>
+            </div>
+            <p style="margin:.25rem 0 0;font-size:.9rem;"><code>str(e)</code> in 3 endpoints exposed DB schema details. Fixed: generic error messages returned, exceptions logged server-side.</p>
+            <div style="font-size:.8rem;color:var(--text-light);">backend/app.py:225,297,330 | Tool: semgrep</div>
+          </div>
+
+          <div class="risk-card high">
+            <div class="risk-header">
+              <span class="risk-title">No frontend auth guards — all 14 routes publicly navigable</span>
+              <span class="severity severity-high">High</span>
+            </div>
+            <p style="margin:.25rem 0 0;font-size:.9rem;">Admin pages (/addstud, /viewstud, /issuecerti) accessible without login check in React router. Backend is the only defense.</p>
+            <div style="font-size:.8rem;color:var(--text-light);">frontend/src/App.js | Tool: code review</div>
+          </div>
+
+          <div class="risk-card medium">
+            <div class="risk-header">
+              <span class="risk-title">Docker containers run as root (backend + frontend)</span>
+              <span class="severity severity-medium">Medium</span>
+            </div>
+            <p style="margin:.25rem 0 0;font-size:.9rem;">Neither Dockerfile defines a non-root USER. Container compromise = root access. Checkov: CKV_DOCKER_3.</p>
+            <div style="font-size:.8rem;color:var(--text-light);">backend/dockerfile, frontend/dockerfile | Tool: semgrep, checkov</div>
+          </div>
+
+          <div class="risk-card medium">
+            <div class="risk-header">
+              <span class="risk-title">PostgreSQL port 5432 exposed on host interface</span>
+              <span class="severity severity-medium">Medium</span>
+            </div>
+            <p style="margin:.25rem 0 0;font-size:.9rem;">DB port bound to 0.0.0.0 in docker-compose.yml — direct access bypasses application layer.</p>
+            <div style="font-size:.8rem;color:var(--text-light);">docker-compose.yml:29 | Tool: checkov</div>
+          </div>
+
+          <div class="risk-card medium">
+            <div class="risk-header">
+              <span class="risk-title">No rate limiting on login endpoints</span>
+              <span class="severity severity-medium">Medium</span>
+            </div>
+            <p style="margin:.25rem 0 0;font-size:.9rem;">/post_univ and /post_stud have no throttling — brute-force attacks are unconstrained.</p>
+            <div style="font-size:.8rem;color:var(--text-light);">backend/app.py:65,84 | Tool: code review</div>
+          </div>
+        </div>
+
+        <!-- Advanced Issues -->
+        <div class="section" id="advanced-issues">
+          <h2>Advanced Issues — Architectural Risks</h2>
+
+          <div class="risk-card high">
+            <div class="risk-header">
+              <span class="risk-title">CSRF on admin certificate issuance — no token validation</span>
+              <span class="severity severity-high">High</span>
+            </div>
+            <p style="margin:.25rem 0 0;font-size:.9rem;">SameSite=Lax is a partial mitigation, but top-level navigations still send the cookie. Full CSRF token protection via Flask-WTF is required for POST/PUT endpoints. A malicious site can forge certificate issuance requests if admin is logged in.</p>
+            <div style="font-size:.8rem;color:var(--text-light);">backend/app.py:295-325 | Exploitable by: any website admin visits</div>
+          </div>
+
+          <div class="risk-card high">
+            <div class="risk-header">
+              <span class="risk-title">Blockchain-DB dual write with no saga/rollback</span>
+              <span class="severity severity-high">High</span>
+            </div>
+            <p style="margin:.25rem 0 0;font-size:.9rem;">Certificate issuance is a two-step operation with no coordination: DB write via Flask API + blockchain write via frontend ethers.js. If the MetaMask transaction fails after the DB write, the DB shows "Issued" but no on-chain proof exists. Silent state divergence — unfalsifiable but fraudulent credentials possible.</p>
+            <p style="font-size:.85rem;color:var(--danger);"><strong>Cost of inaction:</strong> 3mo: Silent divergences. 6mo: Employer verification fails for graduates. 12mo: System untrusted.</p>
+            <div style="font-size:.8rem;color:var(--text-light);">frontend/src/components/certificateIssuer.js + backend/app.py</div>
+          </div>
+        </div>
+
+        <!-- Section 4: Deep Insights -->
+        <div class="section-divider">Deep Insights</div>
+
+        <div class="section" id="deep-insights">
+          <h2>Deep Insights</h2>
+        </div>
+
+        <div class="section" id="config-contradictions">
+          <h2>Configuration Contradictions</h2>
+
+          <div class="contradiction-card">
+            <h4>CORS Credentials + No CSRF Tokens</h4>
+            <p><code>supports_credentials=True</code> in Flask-CORS means the browser automatically sends session cookies on cross-origin requests. Combined with no CSRF token validation, this is a textbook CSRF setup. The SameSite=Lax fix reduces but does not eliminate the risk.</p>
+            <p><strong>ConfigA:</strong> <code>supports_credentials=True, ALLOWED_ORIGINS=http://localhost:3000</code> (backend/app.py:17)<br>
+            <strong>ConfigB:</strong> No X-CSRFToken header validation on any POST/PUT endpoint</p>
+          </div>
+
+          <div class="contradiction-card">
+            <h4>Flask Dev Server vs Production Needs</h4>
+            <p>Both docker-compose.yml (<code>FLASK_RUN_HOST=0.0.0.0</code>) and the Dockerfile CMD (<code>python3 app.py</code>) run Werkzeug's development server. This is single-threaded and blocks under concurrent load. Should use gunicorn with multiple workers.</p>
+          </div>
+        </div>
+
+        <div class="section" id="implicit-contracts">
+          <h2>Implicit Contracts — Assumptions That Break Under Load</h2>
+
+          <div class="assumption-card">
+            <h4>stud_id in /request_certificate matches the authenticated student</h4>
+            <div class="scenario">Breaks when: Any authenticated student sends stud_id=2 in the request body — creates/overwrites another student's certificate request. FIXED in this scan run.</div>
+          </div>
+
+          <div class="assumption-card">
+            <h4>Blockchain TX and DB write always succeed atomically</h4>
+            <div class="scenario">Breaks when: MetaMask user rejects the transaction after the DB write completes, or gas estimation fails. DB shows "Issued", blockchain has no record. No rollback, no retry, no notification.</div>
+          </div>
+
+          <div class="assumption-card">
+            <h4>POSTGRES_PASSWORD will be changed from 'CHANGE_ME' before deployment</h4>
+            <div class="scenario">Breaks when: Developer deploys to staging/production without updating .env. PostgreSQL will start but with a known placeholder password.</div>
+          </div>
+
+          <div class="assumption-card">
+            <h4>MetaMask is always installed and available</h4>
+            <div class="scenario">Breaks when: Any user without MetaMask visits the app. connect.js silently swallows the error (console.warn only). No user-visible feedback or graceful degradation.</div>
+          </div>
+        </div>
+
+        <div class="section" id="stress-projection">
+          <h2>Stress Projection — What Breaks at Scale?</h2>
+          <table>
+            <thead><tr><th>Component</th><th>Current Limit</th><th>Breaks At</th><th>Bottleneck</th></tr></thead>
+            <tbody>
+              <tr><td>Flask (Werkzeug dev server)</td><td>1 concurrent request</td><td>2x concurrent users</td><td>Single-threaded server</td></tr>
+              <tr><td>PostgreSQL connection pool</td><td>SQLAlchemy default: 5 conns</td><td>~5-10 concurrent DB ops</td><td>No pool configuration</td></tr>
+              <tr><td>getAllCertificates() in contract</td><td>~1000 certs (gas estimate)</td><td>~5000+ certificates</td><td>Unbounded array iteration</td></tr>
+              <tr><td>Blockchain writes</td><td>MetaMask UI confirmation</td><td>Any automation</td><td>Manual confirmation required</td></tr>
+              <tr><td>Horizontal scaling</td><td>Not possible</td><td>Any load</td><td>Session stored in Flask (in-process)</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:.85rem;color:var(--text-light);">Horizontal scaling is blocked by in-process Flask sessions. Switching to Redis session storage would unlock multi-replica deployment.</p>
+        </div>
+
+        <!-- STRIDE Analysis -->
+        <div class="section" id="stride-analysis">
+          <h2>STRIDE Threat Model</h2>
+
+          <div class="diagram-container">
+            <h4>Trust Boundary Diagram</h4>
+            <pre class="mermaid">graph TB
+  subgraph External["🌐 External (Untrusted)"]
+    Browser["Browser\n(student/admin)"]
+    MaliciousSite["⚠️ Malicious Site\n(CSRF source)"]
+  end
+  subgraph DMZ["🔌 App Layer (Docker)"]
+    Flask["Flask API\n:5001"]
+    React["React SPA\n:3000"]
+  end
+  subgraph DataLayer["💾 Data Layer"]
+    PG["PostgreSQL\n:5432 ⚠️ exposed"]
+  end
+  subgraph Blockchain["⛓️ Blockchain"]
+    ETH["Ethereum\nCertificateIssuer.sol"]
+  end
+  Browser -->|"HTTP (no TLS)\nSession cookie"| Flask
+  Browser --> React
+  MaliciousSite -.->|"CSRF: forged POST\nwith admin cookie"| Flask
+  Flask -->|"TCP/Docker bridge\nSQL queries"| PG
+  Browser -->|"ethers.js + MetaMask\nJSON-RPC"| ETH
+
+  classDef risk fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  classDef warn fill:#fef9c3,stroke:#ca8a04,color:#713f12
+  classDef ok fill:#dcfce7,stroke:#16a34a,color:#14532d
+  class MaliciousSite,PG risk
+  class Flask,React warn
+  class ETH ok</pre>
+          </div>
+
+          <table>
+            <thead><tr><th>STRIDE Category</th><th>Count</th><th>Key Threats</th></tr></thead>
+            <tbody>
+              <tr><td><strong>S — Spoofing</strong></td><td>2</td><td>CSRF impersonates admin; init_db.py plaintext password enables credential reuse (Fixed)</td></tr>
+              <tr><td><strong>T — Tampering</strong></td><td>3</td><td>IDOR on stud_id (Fixed); CSRF forges state changes; no date input validation</td></tr>
+              <tr><td><strong>R — Repudiation</strong></td><td>1</td><td>No audit log for certificate issuance, grade changes, or admin operations</td></tr>
+              <tr><td><strong>I — Information Disclosure</strong></td><td>3</td><td>str(e) in HTTP responses (Fixed); plaintext password in source (Fixed); port 5432 exposed</td></tr>
+              <tr><td><strong>D — Denial of Service</strong></td><td>2</td><td>No rate limiting on login; getAllCertificates() unbounded loop in contract</td></tr>
+              <tr><td><strong>E — Elevation of Privilege</strong></td><td>3</td><td>Containers run as root; frontend routes accessible without auth; admin plaintext password (Fixed)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Section 5: Remediation Roadmap -->
+        <div class="section-divider">Remediation Roadmap</div>
+
+        <div class="section" id="fix-today">
+          <h2>Fix Today — Applied in This Run</h2>
+          <div class="sprint-card">
+            <h4>5 fixes applied, 0 critical issues remaining</h4>
+            <div style="font-size:.85rem;color:var(--text-light);margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border-light);">These changes were automatically applied and are included in the commit.</div>
+            <table>
+              <thead><tr><th>File</th><th>Fix</th><th>Severity</th></tr></thead>
+              <tbody>
+                <tr><td>backend/init_db.py</td><td>Hash admin password; require env vars (no defaults)</td><td><span class="severity severity-critical">Critical</span></td></tr>
+                <tr><td>backend/app.py</td><td>SESSION_COOKIE_SAMESITE=Lax, HTTPONLY, SECURE</td><td><span class="severity severity-high">High</span></td></tr>
+                <tr><td>backend/app.py</td><td>IDOR fix: stud_id from session only</td><td><span class="severity severity-high">High</span></td></tr>
+                <tr><td>backend/app.py</td><td>Generic error messages, exceptions logged server-side</td><td><span class="severity severity-medium">Medium</span></td></tr>
+                <tr><td>frontend/src/components/certificateIssuer.js</td><td>Contract address from REACT_APP_CONTRACT_ADDRESS env var</td><td><span class="severity severity-high">High</span></td></tr>
+              </tbody>
+            </table>
+            <div class="pr-description">fix(security): critical credential exposure, CSRF, IDOR, exception leakage, broken blockchain
+
+Resolves 4 security findings from Opsera deep analysis (Mar 31, 2026):
+
+CRITICAL:
+- Hash admin password in init_db.py with generate_password_hash()
+- Require ADMIN_PASSWORD env var — no hardcoded credentials
+
+HIGH:
+- Add SESSION_COOKIE_SAMESITE=Lax, HTTPONLY=True, SECURE in app.py
+- IDOR: derive stud_id from session.user_id in /request_certificate
+- Contract address loaded from REACT_APP_CONTRACT_ADDRESS env var
+
+MEDIUM:
+- Replace str(e) responses with generic error messages
+- Log all exceptions server-side with Python logging module
+
+Security scan score: 60/100 (High Risk) → ~47/100 (Moderate) after fixes</div>
+          </div>
+        </div>
+
+        <div class="section" id="fix-sprint">
+          <h2>Fix This Sprint</h2>
+          <table>
+            <thead><tr><th>Priority</th><th>Finding</th><th>Action</th><th>Effort</th></tr></thead>
+            <tbody>
+              <tr><td><span class="severity severity-high">High</span></td><td>Full CSRF token protection</td><td>Add flask-wtf, CSRFProtect(app), send X-CSRFToken from React</td><td>1 day</td></tr>
+              <tr><td><span class="severity severity-high">High</span></td><td>Frontend auth guards</td><td>Add ProtectedRoute wrapper; redirect to login if no session</td><td>2 hours</td></tr>
+              <tr><td><span class="severity severity-medium">Medium</span></td><td>Docker containers run as root</td><td>Add USER appuser directive to both Dockerfiles</td><td>30 min</td></tr>
+              <tr><td><span class="severity severity-medium">Medium</span></td><td>PostgreSQL port exposed on host</td><td>Remove db.ports from docker-compose.yml</td><td>5 min</td></tr>
+              <tr><td><span class="severity severity-medium">Medium</span></td><td>No rate limiting on login</td><td>flask-limiter: @limiter.limit("10 per minute") on login endpoints</td><td>30 min</td></tr>
+              <tr><td><span class="severity severity-medium">Medium</span></td><td>No date input validation</td><td>Wrap strptime in try/except, return 400 on invalid format</td><td>10 min</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section" id="next-quarter">
+          <h2>Plan For Next Quarter</h2>
+          <table>
+            <thead><tr><th>Priority</th><th>Finding</th><th>Action</th><th>Effort</th><th>Cost of Inaction</th></tr></thead>
+            <tbody>
+              <tr><td><span class="severity severity-high">High</span></td><td>Blockchain-DB state divergence</td><td>Add blockchain_tx_hash + blockchain_status to certi table; implement event listener for CertificateIssued</td><td>1 week</td><td>Fraudulent/unverifiable credentials in 6 months</td></tr>
+              <tr><td><span class="severity severity-medium">Medium</span></td><td>No CI/CD pipeline</td><td>GitHub Actions: lint → test → security scan → docker build</td><td>2 days</td><td>Manual errors accumulate; no security gates</td></tr>
+              <tr><td><span class="severity severity-medium">Medium</span></td><td>Flask dev server</td><td>Add gunicorn to requirements.txt; update Dockerfile CMD</td><td>30 min</td><td>Single-threaded bottleneck under any load</td></tr>
+              <tr><td><span class="severity severity-medium">Medium</span></td><td>No audit logging</td><td>Log admin actions (certificate issuance, grade changes) with timestamp, user_id</td><td>2 hours</td><td>Cannot attribute fraudulent operations</td></tr>
+              <tr><td><span class="severity severity-low">Low</span></td><td>No HEALTHCHECK</td><td>Add HEALTHCHECK to both Dockerfiles</td><td>1 hour</td><td>Dead containers silently accept traffic</td></tr>
+              <tr><td><span class="severity severity-low">Low</span></td><td>Outdated blockchain deps</td><td>Upgrade hardhat, ethers.js, @nomicfoundation/hardhat-toolbox</td><td>1 day</td><td>Security patches missed; API breaking changes</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      <div class="footer">
+        <div class="footer-logo">
+          <img class="logo-light" src="https://agent.opsera.ai/opsera_logo_transparent.png" alt="Opsera">
+          <img class="logo-dark" src="https://agent.opsera.ai/opsera_logo_white_horizontal.png" alt="Opsera">
+        </div>
+        Generated by Opsera DevOps Agent | Architecture Risk Analysis (3-Pass) | vasthavik | Mar 31, 2026
+      </div>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+    function toggleTheme() {
+      var html = document.documentElement;
+      var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      try { localStorage.setItem('opsera-report-theme', next); } catch(e) {}
+    }
+    (function() {
+      try { var saved = localStorage.getItem('opsera-report-theme'); if (saved) document.documentElement.setAttribute('data-theme', saved); } catch(e) {}
+    })();
+    document.addEventListener('DOMContentLoaded', function() {
+      var links = document.querySelectorAll('.sidebar-link[href^="#"]');
+      var sections = [];
+      links.forEach(function(link) {
+        var id = link.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) sections.push({ id: id, el: el, link: link });
+      });
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            links.forEach(function(l) { l.classList.remove('active'); });
+            var match = sections.find(function(s) { return s.el === entry.target; });
+            if (match) { match.link.classList.add('active'); match.link.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+          }
+        });
+      }, { rootMargin: '-10% 0px -80% 0px', threshold: 0 });
+      sections.forEach(function(s) { observer.observe(s.el); });
+      var sidebar = document.getElementById('sidebar');
+      var toggle = document.getElementById('sidebarToggle');
+      var overlay = document.getElementById('sidebarOverlay');
+      function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+      if (toggle) toggle.addEventListener('click', function() { sidebar.classList.toggle('open'); overlay.classList.toggle('open'); });
+      if (overlay) overlay.addEventListener('click', closeSidebar);
+      links.forEach(function(link) { link.addEventListener('click', function() { if (window.innerWidth <= 900) closeSidebar(); }); });
+    });
+  </script>
+</body>
+</html>

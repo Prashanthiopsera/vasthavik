@@ -66,6 +66,16 @@ def safe_model_to_dict(obj):
     return data
 
 
+@app.route("/health")
+def health():
+    try:
+        db.session.execute(db.text("SELECT 1"))
+        return jsonify({"status": "healthy", "db": "ok"}), 200
+    except Exception as e:
+        logger.error("Health check failed: %s", e)
+        return jsonify({"status": "unhealthy", "db": "error"}), 503
+
+
 @app.route("/")
 def hello_world():
     return "<p>hello world</p>"

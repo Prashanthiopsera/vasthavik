@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Scan Report — vasthavik</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <style>
+    :root{--primary:#1a365d;--accent:#3182ce;--bg:#f7fafc;--card:#fff;--text:#2d3748;--text-light:#718096;--border:#e2e8f0;--border-light:#edf2f7;--success:#38a169;--danger:#e53e3e;--warning:#d69e2e;--critical:#c53030;--high:#c05621;--medium:#b7791f;--low:#276749}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{font-size:16px;scroll-behavior:smooth}
+    body{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+    h1{font-size:1.75rem;font-weight:700;letter-spacing:-.02em}
+    h2{font-size:1.35rem;font-weight:600;color:var(--primary)}
+    h3{font-size:1.1rem;font-weight:600;color:#2a4a7f;margin-top:1.25rem;margin-bottom:.5rem}
+    p{margin-bottom:.75rem}
+    ul,ol{margin:.5rem 0 .75rem 1.5rem}li{margin-bottom:.25rem}
+    a{color:var(--accent);text-decoration:none}
+    .header{background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);color:#fff;padding:2.5rem 2rem}
+    .header-content{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:1.5rem}
+    .header h1{color:#fff;margin-bottom:.4rem}
+    .header .meta{opacity:.85;font-size:.875rem}
+    .container{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+    .toc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.5rem 2rem;margin-bottom:2rem}
+    .toc h2{margin-bottom:.75rem;font-size:1.1rem;border:none;padding:0}
+    .toc ol{margin-left:1.25rem}.toc li{padding:.2rem 0}
+    .section{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:2rem;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+    .section h2{border-bottom:2px solid var(--accent);padding-bottom:.5rem;margin-bottom:1.25rem}
+    .act-divider{text-align:center;padding:1.5rem 0;margin:1rem 0;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-light);border-top:2px solid var(--border)}
+    table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.9rem}
+    thead th{background:var(--primary);color:#fff;padding:.65rem .75rem;text-align:left;font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em}
+    tbody td{padding:.6rem .75rem;border-bottom:1px solid var(--border-light)}
+    tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#edf2f7}
+    .score-container{display:flex;align-items:center;justify-content:center;gap:3rem;padding:2rem;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:1.5rem}
+    .severity-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+    .severity-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.5rem;text-align:center}
+    .severity-card .count{font-size:2.5rem;font-weight:700}
+    .severity-card .label{color:var(--text-light);font-size:.8rem;margin-top:.25rem}
+    .severity-card.critical .count{color:var(--critical)}.severity-card.high .count{color:var(--high)}.severity-card.medium .count{color:var(--medium)}.severity-card.low .count{color:var(--low)}
+    .scan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1rem}
+    .scan-card{background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:1rem;text-align:center}
+    .scan-card .icon{font-size:1.5rem;margin-bottom:.25rem}.scan-card .name{font-size:.8rem;font-weight:600}.scan-card .status{font-size:.75rem;margin-top:.25rem}
+    .scan-card.passed .status{color:var(--success)}.scan-card.failed .status{color:var(--danger)}.scan-card.skipped .status{color:var(--text-light)}
+    .finding{background:#f8fafc;border-radius:6px;padding:1rem;margin-bottom:.75rem;border-left:4px solid var(--border)}
+    .finding.critical{border-left-color:#e53e3e;background:#fff5f5}.finding.high{border-left-color:#dd6b20;background:#fffaf5}.finding.medium{border-left-color:#d69e2e;background:#fffff5}.finding.low{border-left-color:#38a169;background:#f0fff4}
+    .finding-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;gap:.5rem}
+    .finding-title{font-weight:600}
+    .finding-location{font-family:'SF Mono','Fira Code',Menlo,monospace;font-size:.75rem;background:#edf2f7;padding:.25rem .5rem;border-radius:4px;margin:.5rem 0;border:1px solid var(--border-light);display:inline-block}
+    .severity{padding:.2rem .65rem;border-radius:12px;font-size:.7rem;font-weight:600;white-space:nowrap;flex-shrink:0}
+    .severity-critical{background:#fed7d7;color:#c53030}.severity-high{background:#feebc8;color:#c05621}.severity-medium{background:#fefcbf;color:#975a16}.severity-low{background:#c6f6d5;color:#276749}
+    .cve-badge{font-family:monospace;font-size:.75rem;background:#fff5f5;color:#c53030;padding:.15rem .5rem;border-radius:4px;border:1px solid #fed7d7;display:inline-block;margin:.25rem .25rem 0 0}
+    .remediation-box{background:#f0fff4;border:1px solid #c6f6d5;border-radius:6px;padding:.75rem;margin-top:.75rem;font-size:.85rem}
+    .remediation-box strong{color:var(--success)}
+    .sprint-card{border:2px solid var(--success);border-radius:8px;padding:1.5rem;margin:1rem 0;background:#f0fff4}
+    .sprint-card h4{color:#276749;margin-top:0}
+    .sprint-card .sprint-meta{font-size:.85rem;color:var(--text-light);margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid #c6f6d5}
+    .inaction-cost{background:#fff5f5;border-left:3px solid var(--danger);padding:.75rem 1rem;margin:.5rem 0;border-radius:0 6px 6px 0;font-size:.9rem}
+    .inaction-cost strong{color:var(--danger)}
+    code{background:#edf2f7;padding:.15rem .4rem;border-radius:4px;font-family:monospace;font-size:.85em}
+    pre{background:#1a202c;color:#e2e8f0;padding:1rem 1.25rem;border-radius:8px;overflow-x:auto;font-family:monospace;font-size:.85rem;line-height:1.5;border:1px solid #2d3748;margin:.75rem 0;white-space:pre}
+    .verdict-banner{background:#fff5f5;border:2px solid var(--danger);border-radius:8px;padding:1.5rem 2rem;margin-bottom:1.5rem;text-align:center}
+    .verdict-banner h3{color:var(--danger);font-size:1.25rem;margin:0 0 .5rem 0}
+    .verdict-banner p{color:var(--text);margin:0;font-size:.95rem}
+    .footer{text-align:center;padding:2rem 1rem;color:var(--text-light);font-size:.8rem;border-top:1px solid var(--border);margin-top:1rem}
+    @media(max-width:768px){.container{padding:1rem}.section{padding:1.25rem}.severity-grid{grid-template-columns:repeat(2,1fr)}table{font-size:.8rem}h1{font-size:1.4rem}}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <div>
+      <h1>&#128274; Security Scan Report</h1>
+      <div class="meta">vasthavik &nbsp;|&nbsp; SAST + Secrets + Dependencies + IaC + Dockerfile + Smart Contract &nbsp;|&nbsp; 2026-03-10 &nbsp;|&nbsp; Opsera DevOps Agent</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="verdict-banner">
+    <h3>&#10060; DEPLOYMENT BLOCKED &#8212; Critical Security Issues Found</h3>
+    <p>6 critical application-level vulnerabilities + 8 critical npm CVEs detected. This codebase must not be deployed with real university data until all P0 and P1 issues are resolved. Risk Score: <strong>18/100</strong>.</p>
+  </div>
+
+  <div class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#exec">Executive Summary</a></li>
+      <li><a href="#risk">Risk Score &amp; Severity</a></li>
+      <li><a href="#coverage">Scan Coverage</a></li>
+      <li><a href="#secrets">Secrets Detection</a></li>
+      <li><a href="#sast">Static Analysis (SAST)</a></li>
+      <li><a href="#deps">Dependency Vulnerabilities</a></li>
+      <li><a href="#iac">Infrastructure &amp; Dockerfile</a></li>
+      <li><a href="#blockchain">Smart Contract Security</a></li>
+      <li><a href="#sonar">SonarQube Quality Gate</a></li>
+      <li><a href="#roadmap">Remediation Roadmap</a></li>
+    </ol>
+  </div>
+
+  <div class="section" id="exec">
+    <h2>Executive Summary</h2>
+    <table>
+      <thead><tr><th>Category</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td>Secrets / Hardcoded Credentials</td><td style="color:var(--critical);font-weight:bold">1</td><td>1</td><td>0</td><td>0</td><td>2</td></tr>
+        <tr><td>Authentication &amp; Authorization</td><td style="color:var(--critical);font-weight:bold">1</td><td>0</td><td>0</td><td>0</td><td>1</td></tr>
+        <tr><td>Password Security</td><td style="color:var(--critical);font-weight:bold">2</td><td>0</td><td>0</td><td>0</td><td>2</td></tr>
+        <tr><td>Smart Contract Security</td><td style="color:var(--critical);font-weight:bold">1</td><td>0</td><td>1</td><td>0</td><td>2</td></tr>
+        <tr><td>Dependency Vulnerabilities (npm)</td><td style="color:var(--critical);font-weight:bold">8</td><td>35</td><td>15</td><td>15</td><td>73</td></tr>
+        <tr><td>CORS / API Configuration</td><td>0</td><td>1</td><td>1</td><td>0</td><td>2</td></tr>
+        <tr><td>Infrastructure / Docker</td><td>0</td><td>2</td><td>0</td><td>1</td><td>3</td></tr>
+        <tr><td>Input Validation</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
+        <tr style="background:#fef2f2;font-weight:bold"><td>Total</td><td style="color:var(--critical)">13</td><td style="color:var(--high)">39</td><td style="color:var(--medium)">18</td><td style="color:var(--low)">16</td><td>86</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section" id="risk">
+    <h2>Risk Score &amp; Severity Breakdown</h2>
+    <div class="score-container">
+      <div style="text-align:center">
+        <div style="font-size:4rem;font-weight:700;color:#c53030">18</div>
+        <div style="font-size:1rem;color:var(--text-light)">/100 Risk Score</div>
+        <div style="margin-top:.5rem;padding:.5rem 1rem;background:#fed7d7;border-radius:12px;font-size:.85rem;font-weight:600;color:#c53030">CRITICAL</div>
+      </div>
+      <div style="max-width:400px">
+        <p style="font-size:1.1rem;font-weight:600;color:var(--primary);margin-bottom:.75rem">Score below 40: Immediate action required</p>
+        <p style="color:var(--text-light);font-size:.9rem">The vasthavik project has the lowest possible security posture. Every major security control is absent: no authentication, no password hashing, no secrets management, and an open smart contract. A single HTTP request compromises all data.</p>
+      </div>
+    </div>
+    <div class="severity-grid">
+      <div class="severity-card critical"><div class="count">13</div><div class="label">Critical (6 app + 8 npm)</div></div>
+      <div class="severity-card high"><div class="count">39</div><div class="label">High (10 app + 35 npm)</div></div>
+      <div class="severity-card medium"><div class="count">18</div><div class="label">Medium</div></div>
+      <div class="severity-card low"><div class="count">16</div><div class="label">Low</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="coverage">
+    <h2>Scan Coverage</h2>
+    <div class="scan-grid">
+      <div class="scan-card failed"><div class="icon">&#128273;</div><div class="name">Secrets (gitleaks)</div><div class="status">&#9888;&#65039; Findings</div></div>
+      <div class="scan-card failed"><div class="icon">&#128269;</div><div class="name">SAST (semgrep)</div><div class="status">&#9888;&#65039; Findings</div></div>
+      <div class="scan-card failed"><div class="icon">&#128230;</div><div class="name">npm audit</div><div class="status">&#10060; 8 Critical</div></div>
+      <div class="scan-card skipped"><div class="icon">&#128013;</div><div class="name">pip-audit</div><div class="status">&#9888;&#65039; PATH Issue</div></div>
+      <div class="scan-card failed"><div class="icon">&#128051;</div><div class="name">hadolint</div><div class="status">&#9888;&#65039; DL3042</div></div>
+      <div class="scan-card failed"><div class="icon">&#127959;&#65039;</div><div class="name">IaC (checkov)</div><div class="status">&#9888;&#65039; Findings</div></div>
+      <div class="scan-card skipped"><div class="icon">&#128202;</div><div class="name">SonarQube</div><div class="status">&#9888;&#65039; No credential</div></div>
+      <div class="scan-card failed"><div class="icon">&#9875;&#65039;</div><div class="name">Solidity (manual)</div><div class="status">&#10060; Critical</div></div>
+    </div>
+    <p style="font-size:.85rem;color:var(--text-light)">pip-audit installed during scan but PATH resolution failed in shell context. SonarQube skipped &#8212; add a SonarQube credential in Opsera admin to enable future quality gate scans.</p>
+  </div>
+
+  <div class="section" id="secrets">
+    <h2>&#128273; Secrets Detection</h2>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">Hardcoded Flask Secret Key in Source Code</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <div class="finding-location">backend/app.py:11</div>
+      <p>Flask uses <code>secret_key</code> to sign session cookies with HMAC-SHA1. The key <code>'vasthavik'</code> is committed to git. Anyone with repository access can forge valid admin session cookies without knowing any user's credentials.</p>
+      <p><strong>Attack vector (zero skill required):</strong> <code>pip install flask-unsign &amp;&amp; flask-unsign --sign --cookie "{'user_id': 1}" --secret 'vasthavik'</code></p>
+      <div class="remediation-box">
+        <strong>Fix (5 min):</strong><br>
+        <code>app.secret_key = os.environ.get('SECRET_KEY') or exit('SECRET_KEY env var required')</code>
+      </div>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">Database Credentials Hardcoded in Version Control</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <div class="finding-location">docker-compose.yml:13 &nbsp; backend/app.py:16</div>
+      <p>PostgreSQL credentials <code>postgres:pgadmin</code> are committed to git. Credential rotation requires a code change and new commit &#8212; this antipattern makes credentials effectively unrotatable.</p>
+      <div class="remediation-box">
+        <strong>Fix (30 min):</strong> Replace with <code>${DATABASE_URL}</code> in docker-compose.yml and load from a gitignored <code>.env</code> file.
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="sast">
+    <h2>&#128269; Static Analysis (SAST)</h2>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">Zero Authentication on All 9 API Endpoints</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <div class="finding-location">backend/app.py &#8212; all routes</div>
+      <p>No authentication middleware, no <code>@login_required</code> decorators, no session validation on any of the 9 Flask API routes. Every endpoint is publicly accessible to any HTTP client.</p>
+      <p><strong>Exposed operations (unauthenticated):</strong></p>
+      <ul>
+        <li><code>GET /student_all</code> &#8212; returns ALL students including passwords</li>
+        <li><code>PUT /update_certi/&lt;id&gt;</code> &#8212; modify any certificate status</li>
+        <li><code>POST /issue_certificate</code> &#8212; issue certificates without authorization</li>
+        <li><code>POST /post_addstud</code> &#8212; create or update any student record</li>
+      </ul>
+      <div class="remediation-box">
+        <strong>Fix (2 hrs):</strong> Add session-based auth decorator to all protected routes.
+        <pre>from functools import wraps
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Authentication required'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+@app.route('/student_all', methods=['GET'])
+@require_auth
+def get_all_students(): ...</pre>
+      </div>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">Plaintext Passwords in Database &#8212; Exposed via Unauthenticated API</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <div class="finding-location">backend/app.py:33, 42, 77 &nbsp; backend/models.py</div>
+      <p>All Admin and Student passwords are stored as plaintext strings. Login performs direct string comparison. The <code>GET /student_all</code> endpoint (line 77) returns every student's <code>password</code> field in JSON to any unauthenticated caller.</p>
+      <div class="remediation-box">
+        <strong>Fix (1 hr + DB migration):</strong> Install bcrypt, hash passwords on create, verify on login, remove password field from API responses.
+      </div>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">Predictable Auto-Generated Student Passwords</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <div class="finding-location">backend/app.py:57</div>
+      <p><code>password = f"{first_name}{last_name}{year_of_birth}"</code> produces passwords like <code>JohnDoe1999</code>. University enrollment rosters are often public or accessible to students, making all accounts immediately compromisable.</p>
+      <div class="remediation-box">
+        <strong>Fix (15 min):</strong><br>
+        <code>import secrets</code><br>
+        <code>password = secrets.token_urlsafe(16)</code>
+      </div>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">CORS with supports_credentials=True and No Origin Restriction</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <div class="finding-location">backend/app.py:13</div>
+      <p><code>CORS(app, supports_credentials=True)</code> with no <code>origins</code> parameter allows any domain to make credentialed cross-origin requests with session cookies &#8212; enabling CSRF from any website.</p>
+      <div class="remediation-box">
+        <strong>Fix (10 min):</strong><br>
+        <code>CORS(app, supports_credentials=True, origins=['http://localhost:3000', 'https://yourdomain.com'])</code>
+      </div>
+    </div>
+
+    <div class="finding medium">
+      <div class="finding-header">
+        <span class="finding-title">No Request Validation &#8212; Malformed Input Crashes Endpoints</span>
+        <span class="severity severity-medium">Medium</span>
+      </div>
+      <div class="finding-location">backend/app.py:31, 42, 51 (multiple routes)</div>
+      <p>Routes use <code>request.json['username']</code> (KeyError crash if missing) and access <code>request.json</code> without checking <code>Content-Type</code> (returns <code>None</code>, causing TypeError). Easy DoS &#8212; stack traces are returned to clients revealing internal structure.</p>
+      <div class="remediation-box">
+        <strong>Fix (1 hr):</strong> Add <code>if not request.is_json: return jsonify({'error': 'JSON required'}), 400</code> and use <code>request.json.get('key', '')</code> pattern throughout.
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="deps">
+    <h2>&#128230; Dependency Vulnerabilities (npm audit)</h2>
+    <p style="margin-bottom:1rem"><strong>Scanned:</strong> frontend/package.json &nbsp;|&nbsp; <strong>Result:</strong> <span style="color:var(--critical);font-weight:bold">8 Critical</span>, <span style="color:var(--high);font-weight:bold">35 High</span>, 15 Moderate, 15 Low (146 total packages)</p>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">elliptic &#8212; Private Key Extraction via Malformed ECDSA Input</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <span class="cve-badge">GHSA-f7q4-pwc6-w24p</span>
+      <p>The <code>elliptic</code> library (used by ethers.js) is vulnerable to private key extraction when processing malformed ECDSA signatures. An attacker can extract the private key of any wallet interacting with this frontend &#8212; breaking the core blockchain security model.</p>
+      <div class="remediation-box"><strong>Fix:</strong> Upgrade to <code>ethers@^6</code> which replaces elliptic with @noble/curves.</div>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">pbkdf2, sha.js, cipher-base &#8212; Cryptographic Key/Hash Failures</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <p>pbkdf2 returns static/zero-filled keys for unimplemented algorithms. sha.js and cipher-base allow hash state rewind via missing type checks. These break cryptographic operations relying on these primitives.</p>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">form-data &#8212; Unsafe Random Boundary Generation</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <p>Uses non-cryptographic random for multipart form boundary generation, enabling predictable boundary attacks.</p>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">jspdf &#8212; ReDoS and Denial of Service</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <p>Malformed PDF input triggers catastrophic regex backtracking, causing application-level DoS.</p>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">React Router &#8212; XSS via Open Redirects (CVSS 8.0)</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <span class="cve-badge">GHSA-2w69-qvjg-hvjx</span>
+      <p>React Router &lt;= 1.23.1 vulnerable to reflected XSS via untrusted path open redirects. The frontend uses react-router-dom which inherits this vulnerability.</p>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">Axios &#8212; SSRF and Credential Leakage via Absolute URL</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <p>Axios requests with absolute URLs can leak credentials and enable Server-Side Request Forgery attacks against internal network resources.</p>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">serialize-javascript &#8212; RCE via Unsafe Serialization</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <p>Vulnerable to Remote Code Execution via <code>RegExp.flags</code> and <code>Date.prototype.toISOString()</code>. Used by webpack build tools (webpack-dev-server, css-minimizer-webpack-plugin).</p>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">ws &#8212; Denial of Service via HTTP Header Flooding</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <p>The WebSocket library used by ethers.js providers is vulnerable to DoS when handling requests with many HTTP headers.</p>
+      <div class="remediation-box"><strong>Fix all:</strong> <code>cd frontend &amp;&amp; npm audit fix --force</code> or upgrade ethers to v6.x which resolves the majority of these transitively.</div>
+    </div>
+  </div>
+
+  <div class="section" id="iac">
+    <h2>&#127959;&#65039; Infrastructure as Code &amp; Dockerfile</h2>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">Frontend Dockerfile Runs Development Server in Production</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <div class="finding-location">frontend/dockerfile:CMD</div>
+      <p><code>CMD ["npm", "run", "start"]</code> starts webpack-dev-server (not a production build). Exposes: full source maps, hot reload endpoints, development error overlays, unoptimized bundles.</p>
+      <div class="remediation-box">
+        <strong>Fix (20 min):</strong>
+        <pre>RUN npm run build
+RUN npm install -g serve
+CMD ["serve", "-s", "build", "-l", "3000"]</pre>
+      </div>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">host.docker.internal DATABASE_URL Fails on Linux Production</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <div class="finding-location">docker-compose.yml:13</div>
+      <p><code>host.docker.internal</code> resolves only on Docker Desktop (macOS/Windows). Linux-based production deployments (EKS, ECS, bare metal) will fail to connect to the database at startup &#8212; silent boot failure.</p>
+      <div class="remediation-box">
+        <strong>Fix (30 min):</strong> Add a <code>db</code> service to docker-compose.yml and use <code>db:5432</code> as hostname, or add <code>extra_hosts: ["host.docker.internal:host-gateway"]</code> for Linux Docker.
+      </div>
+    </div>
+
+    <div class="finding low">
+      <div class="finding-header">
+        <span class="finding-title">pip install Without --no-cache-dir (Hadolint DL3042)</span>
+        <span class="severity severity-low">Low</span>
+      </div>
+      <div class="finding-location">backend/dockerfile:10</div>
+      <p>Pip cache unnecessarily inflates Docker image size.</p>
+      <div class="remediation-box"><strong>Fix (2 min):</strong> <code>RUN pip install --no-cache-dir -r requirements.txt</code></div>
+    </div>
+  </div>
+
+  <div class="section" id="blockchain">
+    <h2>&#9875;&#65039; Smart Contract Security</h2>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">issueCertificate() Has No Access Control &#8212; Any Ethereum Address Can Issue Certificates</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <div class="finding-location">blockchain/contracts/CertificateIssuer.sol:24</div>
+      <p><code>function issueCertificate(uint256 _studentId, string memory _grade, string memory _program) public</code> &#8212; no <code>onlyOwner</code>, no role check, no modifier. Any Ethereum address can issue fraudulent certificates for any student ID with any grade. Blockchain is immutable &#8212; fraudulent certificates cannot be deleted.</p>
+      <p><strong>Impact:</strong> The entire blockchain verification system is permanently compromised upon mainnet deployment. The value proposition of the system (immutable, trustworthy certificates) is eliminated.</p>
+      <div class="remediation-box">
+        <strong>Fix (2 hrs &#8212; requires contract redeployment):</strong>
+        <pre>import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract CertificateIssuer is Ownable {
+    mapping(address => bool) public authorizedIssuers;
+
+    modifier onlyAuthorized() {
+        require(authorizedIssuers[msg.sender] || owner() == msg.sender,
+                "Not authorized");
+        _;
+    }
+
+    function issueCertificate(
+        uint256 _studentId,
+        string memory _grade,
+        string memory _program
+    ) public onlyAuthorized { ... }
+
+    function addIssuer(address issuer) external onlyOwner {
+        authorizedIssuers[issuer] = true;
+    }
+}</pre>
+      </div>
+    </div>
+
+    <div class="finding medium">
+      <div class="finding-header">
+        <span class="finding-title">studentIds Array Unbounded Growth &#8212; Gas Limit Risk at Scale</span>
+        <span class="severity severity-medium">Medium</span>
+      </div>
+      <div class="finding-location">blockchain/contracts/CertificateIssuer.sol:13, 43</div>
+      <p><code>getAllCertificates()</code> iterates the full array. No duplicate check means the same student can appear multiple times. Gas cost: ~100k at 1,000 certs, ~1M at 10,000 certs (approaching Ethereum block limit). Fraudulent re-issuance silently overwrites legitimate certificates.</p>
+      <div class="remediation-box">
+        <strong>Fix (30 min):</strong> Add <code>mapping(uint256 =&gt; bool) private _studentExists</code> and require uniqueness before pushing.
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="sonar">
+    <h2>&#128202; SonarQube Quality Gate</h2>
+    <div style="background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:1.5rem;color:var(--text-light)">
+      <p style="margin:0"><strong>&#9888;&#65039; Skipped</strong> &#8212; No SonarQube credential configured in Opsera admin.</p>
+      <p style="margin:.5rem 0 0 0;font-size:.85rem">Add a SonarQube credential (host + token) in Opsera to enable automated quality gate analysis including bugs, code smells, and coverage in future scans.</p>
+    </div>
+  </div>
+
+  <div class="act-divider" id="roadmap">Remediation Roadmap</div>
+
+  <div class="section" id="p0">
+    <h2>&#9889; P0 &#8212; Fix Immediately (Block Deployment)</h2>
+    <div class="sprint-card">
+      <h4>Sprint: 5 fixes, ~65 minutes total &#8212; do before any commit</h4>
+      <div class="sprint-meta">These changes are safe and independent. No database migration required. Collectively they eliminate the most easily exploitable surface: hardcoded secrets and predictable credentials.</div>
+
+      <h3>1. Move SECRET_KEY to environment variable (5 min)</h3>
+      <pre>--- a/backend/app.py
++++ b/backend/app.py
+-app.secret_key = 'vasthavik'
++app.secret_key = os.environ.get('SECRET_KEY') or exit('SECRET_KEY env var required')</pre>
+
+      <h3>2. Generate random student passwords (15 min)</h3>
+      <pre>--- a/backend/app.py
++++ b/backend/app.py
++import secrets
+-password = f"{first_name}{last_name}{year_of_birth}"
++password = secrets.token_urlsafe(16)</pre>
+
+      <h3>3. Move database credentials to .env (30 min)</h3>
+      <pre>--- a/docker-compose.yml
++++ b/docker-compose.yml
+-      DATABASE_URL: postgresql://postgres:pgadmin@host.docker.internal:5432/vastavik
++      DATABASE_URL: ${DATABASE_URL}
+--- a/backend/app.py
++++ b/backend/app.py
+-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://postgres:pgadmin@localhost:5432/vastavik')
++app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']</pre>
+
+      <h3>4. Restrict CORS origins (10 min)</h3>
+      <pre>--- a/backend/app.py
++++ b/backend/app.py
+-CORS(app, supports_credentials=True)
++CORS(app, supports_credentials=True, origins=['http://localhost:3000'])</pre>
+
+      <h3>5. Fix __tablename__ typo in models.py (5 min)</h3>
+      <pre>--- a/backend/models.py
++++ b/backend/models.py
+-    __table__name = "univ"
++    __tablename__ = "univ"
+-    __table__name = "admin"
++    __tablename__ = "admin"
+-    __table__name = "stud"
++    __tablename__ = "stud"</pre>
+    </div>
+  </div>
+
+  <div class="section" id="p1">
+    <h2>&#128293; P1 &#8212; Fix This Sprint (Security Sprint Required Before Production)</h2>
+    <table>
+      <thead><tr><th>Priority</th><th>Finding</th><th>Action</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td><strong>P1.1</strong></td><td>Zero authentication on all routes</td><td>Add JWT or session-based auth middleware with @require_auth decorator on all protected endpoints</td><td>2 hrs</td></tr>
+        <tr><td><strong>P1.2</strong></td><td>Plaintext passwords in database</td><td>Add bcrypt (pip install bcrypt==4.1.2), hash on create, verify on login, database migration for existing users</td><td>1 hr + migration</td></tr>
+        <tr><td><strong>P1.3</strong></td><td>Smart contract open access control</td><td>Add OpenZeppelin Ownable + onlyAuthorized modifier, redeploy contract (immutable &#8212; cannot patch in place)</td><td>2 hrs</td></tr>
+        <tr><td><strong>P1.4</strong></td><td>Frontend dev server in production Docker</td><td>Change dockerfile CMD to npm run build + serve -s build -l 3000</td><td>20 min</td></tr>
+        <tr><td><strong>P1.5</strong></td><td>host.docker.internal fails on Linux</td><td>Add db service to docker-compose.yml or use extra_hosts for Linux compatibility</td><td>30 min</td></tr>
+        <tr><td><strong>P1.6</strong></td><td>8 critical + 35 high npm CVEs</td><td>cd frontend &amp;&amp; npm audit fix --force, or upgrade ethers to v6.x</td><td>4 hrs</td></tr>
+        <tr><td><strong>P1.7</strong></td><td>Passwords exposed via /student_all</td><td>Remove password field from GET /student_all JSON response</td><td>10 min</td></tr>
+      </tbody>
+    </table>
+    <div class="inaction-cost">
+      <strong>Cost of inaction:</strong> Real student data is exposed with a single unauthenticated GET request. Fraudulent blockchain certificates can be issued by any Ethereum wallet. The certification system's core purpose &#8212; trusted verification &#8212; is eliminated before launch.
+    </div>
+  </div>
+
+  <div class="section" id="p2">
+    <h2>&#128203; P2 &#8212; Plan for Next Sprint</h2>
+    <table>
+      <thead><tr><th>Priority</th><th>Finding</th><th>Action</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td><strong>P2.1</strong></td><td>No rate limiting on auth endpoints</td><td>pip install flask-limiter, add @limiter.limit("5/minute") to /post_univ and /post_stud</td><td>30 min</td></tr>
+        <tr><td><strong>P2.2</strong></td><td>No input validation</td><td>Add request.is_json check and .get() pattern throughout all routes</td><td>1 hr</td></tr>
+        <tr><td><strong>P2.3</strong></td><td>Smart contract studentIds unbounded</td><td>Add duplicate check mapping (requires redeployment)</td><td>30 min</td></tr>
+        <tr><td><strong>P2.4</strong></td><td>Blockchain-DB state inconsistency</td><td>Implement two-phase commit: DB status=pending_blockchain then confirm on transaction receipt</td><td>4 hrs</td></tr>
+        <tr><td><strong>P2.5</strong></td><td>No CI/CD security scanning</td><td>Add GitHub Actions workflow: npm audit + semgrep + gitleaks on every PR</td><td>2 hrs</td></tr>
+        <tr><td><strong>P2.6</strong></td><td>No backend tests</td><td>Add pytest with endpoint tests covering at least auth, input validation, CRUD operations</td><td>4 hrs</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="footer">
+  Generated by Opsera DevOps Security Agent &nbsp;|&nbsp; vasthavik &nbsp;|&nbsp; 2026-03-10 &nbsp;|&nbsp; Risk Score: 18/100 &nbsp;|&nbsp; Tools: gitleaks, semgrep, npm audit, hadolint, manual SAST
+</div>
+
+</body>
+</html>

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture Report &#8212; vasthavik</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+  <style>
+    :root{--primary:#1a365d;--primary-light:#2a4a7f;--accent:#3182ce;--accent-hover:#2b6cb0;--bg:#f7fafc;--card:#fff;--text:#2d3748;--text-light:#718096;--border:#e2e8f0;--border-light:#edf2f7;--success:#38a169;--warning:#d69e2e;--danger:#e53e3e;--info:#3182ce}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{font-size:16px;scroll-behavior:smooth}
+    body{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+    h1{font-size:1.75rem;font-weight:700;letter-spacing:-.02em}
+    h2{font-size:1.35rem;font-weight:600;letter-spacing:-.01em;color:var(--primary)}
+    h3{font-size:1.1rem;font-weight:600;color:var(--primary-light);margin-top:1.25rem;margin-bottom:.5rem}
+    h4{font-size:.95rem;font-weight:600;color:var(--text);margin-top:1rem;margin-bottom:.4rem}
+    p{margin-bottom:.75rem}
+    a{color:var(--accent);text-decoration:none}
+    ul,ol{margin:.5rem 0 .75rem 1.5rem}li{margin-bottom:.25rem}
+    .header{background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%);color:#fff;padding:2.5rem 2rem}
+    .header-content{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:1.5rem}
+    .header h1{color:#fff;margin-bottom:.4rem}
+    .header .meta{opacity:.85;font-size:.875rem;font-weight:400}
+    .container{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+    .toc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.5rem 2rem;margin-bottom:2rem}
+    .toc h2{margin-bottom:.75rem;font-size:1.1rem;border:none;padding:0}
+    .toc ol{margin-left:1.25rem}.toc li{padding:.2rem 0}.toc a{font-size:.95rem}
+    .section{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:2rem;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+    .section h2{border-bottom:2px solid var(--accent);padding-bottom:.5rem;margin-bottom:1.25rem}
+    .section-divider{text-align:center;padding:1.5rem 0;margin:1rem 0;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-light);border-top:2px solid var(--border)}
+    .strength-card{border-left:4px solid #22c55e;background:#f0fdf4;padding:1rem 1.25rem;margin-bottom:1rem;border-radius:6px}
+    .strength-card h4{color:#15803d;margin:0 0 .25rem 0;font-size:.95rem}
+    .strength-card p{margin:0;font-size:.9rem}
+    .contradiction-card{border-left:4px solid #ef4444;background:#fef2f2;padding:1rem 1.25rem;margin-bottom:1rem;border-radius:6px}
+    .contradiction-card h4{color:#dc2626;margin:0 0 .5rem 0;font-size:.95rem}
+    .config-pair{display:grid;grid-template-columns:1fr auto 1fr;gap:.75rem;align-items:center;margin:.5rem 0}
+    .config-val{background:#fff;border:1px solid #fca5a5;border-radius:4px;padding:.5rem .75rem;font-family:monospace;font-size:.85rem}
+    .vs-badge{color:#ef4444;font-weight:700;font-size:.8rem}
+    .stress-card{border-left:4px solid #f59e0b;background:#fffbeb;padding:1rem 1.25rem;margin-bottom:1rem;border-radius:6px}
+    .stress-card h4{color:#d97706;margin:0 0 .5rem 0;font-size:.95rem}
+    .stress-tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:.5rem;margin:.75rem 0}
+    .stress-tier{text-align:center;padding:.75rem .5rem;border-radius:6px;font-size:.8rem;font-weight:600}
+    .st-current{background:#d1fae5;color:#065f46}.st-warn{background:#fef3c7;color:#92400e}.st-danger{background:#fee2e2;color:#991b1b}.st-critical{background:#dc2626;color:#fff}.st-catastrophic{background:#7f1d1d;color:#fff}.st-scaling{background:#dbeafe;color:#1e40af}
+    .assumption-card{border-left:4px solid #8b5cf6;background:#f5f3ff;padding:1rem 1.25rem;margin-bottom:1rem;border-radius:6px}
+    .assumption-card h4{color:#7c3aed;margin:0 0 .25rem 0;font-size:.95rem}
+    .assumption-card .scenario{background:#ede9fe;border-radius:4px;padding:.5rem .75rem;margin-top:.5rem;font-size:.85rem;font-style:italic}
+    .coupling-card{border-left:4px solid #ec4899;background:#fdf2f8;padding:1rem 1.25rem;margin-bottom:1rem;border-radius:6px}
+    .coupling-card h4{color:#db2777;margin:0 0 .25rem 0;font-size:.95rem}
+    .dead-path-card{border-left:4px solid #6b7280;background:#f9fafb;padding:1rem 1.25rem;margin-bottom:1rem;border-radius:6px}
+    .dead-path-card h4{color:#4b5563;margin:0 0 .25rem 0;font-size:.95rem}
+    table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.9rem}
+    thead th{background:var(--primary);color:#fff;padding:.65rem .75rem;text-align:left;font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.03em}
+    tbody td{padding:.6rem .75rem;border-bottom:1px solid var(--border-light)}
+    tbody tr:nth-child(even){background:#f8fafc}tbody tr:hover{background:#edf2f7}
+    .badge{display:inline-block;padding:.2rem .65rem;border-radius:12px;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;vertical-align:middle}
+    .badge-critical{background:#fed7d7;color:#c53030}.badge-important{background:#fefcbf;color:#b7791f}.badge-nice{background:#c6f6d5;color:#276749}.badge-info{background:#bee3f8;color:#2a4365}
+    .risk-indicator{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:.4rem;vertical-align:middle}
+    .risk-critical{background:var(--danger)}.risk-high{background:var(--warning)}.risk-medium{background:var(--info)}.risk-low{background:var(--success)}
+    .diagram-container{background:#fff;border:1px solid var(--border);border-radius:8px;padding:1.5rem 2rem;margin:1.25rem 0;text-align:center;overflow-x:auto}
+    .diagram-container h4{text-align:left;margin-bottom:.75rem}
+    pre.mermaid{background:#fff !important;border:none !important;padding:.75rem}
+    .mermaid svg{max-width:100%;height:auto;min-height:250px;background:#fff}
+    .sprint-card{border:2px solid var(--success);border-radius:8px;padding:1.5rem;margin:1rem 0;background:#f0fff4}
+    .sprint-card h4{color:#276749;margin-top:0}
+    .sprint-card .sprint-meta{font-size:.85rem;color:var(--text-light);margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid #c6f6d5}
+    pre{background:#1a202c;color:#e2e8f0;padding:1rem 1.25rem;border-radius:8px;overflow-x:auto;font-family:monospace;font-size:.85rem;line-height:1.5;border:1px solid #2d3748;margin:.75rem 0;white-space:pre}
+    .inaction-cost{background:#fff5f5;border-left:3px solid var(--danger);padding:.75rem 1rem;margin:.5rem 0;border-radius:0 6px 6px 0;font-size:.9rem}
+    .inaction-cost strong{color:var(--danger)}
+    .decision-card{border:2px solid var(--accent);border-radius:8px;padding:1.5rem;margin:1rem 0;background:#f0f7ff}
+    .decision-card h4{color:var(--primary);margin-top:0}
+    .option-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0}
+    .option-card{border:1px solid var(--border);border-radius:6px;padding:1rem;background:var(--card)}
+    .option-card h5{font-size:.9rem;margin-bottom:.5rem}
+    code{background:#edf2f7;padding:.15rem .4rem;border-radius:4px;font-family:monospace;font-size:.85em}
+    .verdict-banner{background:#fff5f5;border:2px solid var(--danger);border-radius:8px;padding:1.5rem 2rem;margin-bottom:1.5rem;text-align:center}
+    .verdict-banner h3{color:var(--danger);font-size:1.25rem;margin:0 0 .5rem 0}
+    .verdict-banner p{color:var(--text);margin:0;font-size:.95rem}
+    .footer{text-align:center;padding:2rem 1rem;color:var(--text-light);font-size:.8rem;border-top:1px solid var(--border);margin-top:1rem}
+    @media(max-width:768px){.container{padding:1rem}.section{padding:1.25rem}.option-grid{grid-template-columns:1fr}table{font-size:.8rem}h1{font-size:1.4rem}}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <div class="header-text">
+      <h1>&#128202; Architecture Report</h1>
+      <div class="meta">Project: vasthavik &nbsp;|&nbsp; Generated: 2026-03-10 &nbsp;|&nbsp; Opsera DevOps Agent (3-Phase Deep Analysis)</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="verdict-banner">
+    <h3>&#10060; DEPLOYMENT BLOCKED &#8212; Critical Architectural Risks</h3>
+    <p>The codebase has fundamental security and structural deficiencies that would immediately compromise a real university's data. 5 critical, 3 high, 4 medium architectural risks identified. See Remediation Roadmap for a prioritized fix plan.</p>
+  </div>
+
+  <div class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#exec">Executive Summary</a></li>
+      <li><a href="#section1">Architecture at a Glance</a>
+        <ol>
+          <li><a href="#diagrams">Architecture Diagrams</a></li>
+          <li><a href="#stack">Tech Stack</a></li>
+          <li><a href="#quantitative">Quantitative Profile</a></li>
+        </ol>
+      </li>
+      <li><a href="#section2">What Works Well</a></li>
+      <li><a href="#section3">Risk Landscape</a>
+        <ol>
+          <li><a href="#critical-risks">Critical Risks</a></li>
+          <li><a href="#high-risks">High Risks</a></li>
+          <li><a href="#medium-risks">Medium Risks</a></li>
+        </ol>
+      </li>
+      <li><a href="#section4">Deep Insights</a>
+        <ol>
+          <li><a href="#contradictions">Configuration Contradictions</a></li>
+          <li><a href="#stress">Stress Projection</a></li>
+          <li><a href="#contracts">Implicit Contracts</a></li>
+          <li><a href="#coupling">Behavioral Coupling</a></li>
+          <li><a href="#deadpaths">Dead Paths</a></li>
+        </ol>
+      </li>
+      <li><a href="#section5">Remediation Roadmap</a></li>
+    </ol>
+  </div>
+
+  <!-- Executive Summary -->
+  <div class="section" id="exec">
+    <h2>Executive Summary</h2>
+    <p>The vasthavik project is a university certificate management system comprising a React frontend, a Flask (Python) backend, a PostgreSQL database, and an Ethereum smart contract for certificate issuance. The concept is sound &#8212; blockchain-backed credential verification is genuinely valuable. However, the current implementation has the security posture of a hackathon prototype, not a production system handling real academic credentials.</p>
+    <p><strong>Critical finding:</strong> The architecture violates the most basic security principles across every layer: no authentication, no password hashing, hardcoded secrets, and an open smart contract that allows anyone to issue certificates. The blockchain layer, which is the system's core value proposition, is entirely broken from a trust perspective.</p>
+    <table>
+      <thead><tr><th>Area</th><th>Severity</th><th>Count</th><th>Key Concern</th></tr></thead>
+      <tbody>
+        <tr><td>Security Architecture</td><td><span class="badge badge-critical">Critical</span></td><td>5</td><td>No auth, plaintext passwords, open smart contract</td></tr>
+        <tr><td>Operational Reliability</td><td><span class="badge badge-critical">Critical</span></td><td>2</td><td>Single point of failure DB, dev server in production</td></tr>
+        <tr><td>Data Integrity</td><td><span class="badge badge-important">High</span></td><td>3</td><td>No blockchain-DB consistency, unbounded smart contract array</td></tr>
+        <tr><td>Scalability</td><td><span class="badge badge-important">High</span></td><td>2</td><td>SQLite-style single DB, no caching layer</td></tr>
+        <tr><td>Code Quality</td><td><span class="badge badge-nice">Medium</span></td><td>4</td><td>SQLAlchemy typo, no input validation, no tests</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Architecture Diagrams -->
+  <div class="section-divider" id="section1">Architecture at a Glance</div>
+
+  <div class="section" id="diagrams">
+    <h2>Architecture Diagrams</h2>
+    <p>Click any diagram to explore. Mermaid diagrams are rendered live in-browser.</p>
+
+    <div class="diagram-container">
+      <h4>System Overview &#8212; Request Flow</h4>
+      <pre class="mermaid">graph TD
+    User["&#128100; Student / Admin<br/>(Browser)"]
+    FE["&#127760; React Frontend<br/>Port 3000<br/>Dev Server (!)"]
+    BE["&#127757; Flask Backend<br/>Port 5000<br/>No Auth (!)"]
+    DB[("&#128451; PostgreSQL<br/>Plaintext passwords (!)")]
+    BC["&#9875; Hardhat / Ethereum<br/>Open issueCertificate() (!)"]
+
+    User -->|HTTP| FE
+    FE -->|REST API / Axios| BE
+    BE -->|SQLAlchemy| DB
+    BE -->|ethers.js| BC
+
+    style FE fill:#fef3c7,stroke:#f59e0b,color:#1a202c
+    style BE fill:#fee2e2,stroke:#ef4444,color:#1a202c
+    style DB fill:#fee2e2,stroke:#ef4444,color:#1a202c
+    style BC fill:#fee2e2,stroke:#ef4444,color:#1a202c</pre>
+    </div>
+
+    <div class="diagram-container">
+      <h4>Data Flow &#8212; Certificate Issuance</h4>
+      <pre class="mermaid">sequenceDiagram
+    participant Admin as Admin Browser
+    participant Flask as Flask API (no auth)
+    participant DB as PostgreSQL
+    participant ETH as Ethereum Contract
+
+    Admin->>Flask: POST /issue_certificate (no token)
+    Flask->>DB: UPDATE stud SET certi='yes'
+    Note over Flask,DB: DB updated synchronously
+    Flask->>ETH: issueCertificate() call
+    Note over ETH: Anyone can call this directly!
+    ETH-->>Flask: txHash (may fail)
+    Flask-->>Admin: {txHash} or error
+    Note over DB,ETH: No rollback if ETH fails &#8212; DB inconsistent</pre>
+    </div>
+
+    <div class="diagram-container">
+      <h4>Component Dependency Map</h4>
+      <pre class="mermaid">graph LR
+    subgraph Frontend["Frontend (React)"]
+        Router["react-router-dom"]
+        Axios["Axios (SSRF risk)"]
+        Ethers["ethers.js<br/>(elliptic CVE)"]
+        jspdf["jspdf (DoS risk)"]
+    end
+
+    subgraph Backend["Backend (Flask)"]
+        App["app.py<br/>(9 unauth routes)"]
+        Models["models.py<br/>(__tablename__ typo)"]
+        CORS["Flask-CORS<br/>(unrestricted)"]
+    end
+
+    subgraph Infrastructure["Infrastructure"]
+        PG[("PostgreSQL<br/>(plaintext pw)")]
+        DC["docker-compose<br/>(host.docker.internal)"]
+    end
+
+    subgraph Blockchain["Blockchain"]
+        Sol["CertificateIssuer.sol<br/>(no access control)"]
+        HH["Hardhat"]
+    end
+
+    Frontend -->|REST| Backend
+    Backend --> Infrastructure
+    Frontend --> Blockchain
+    Backend --> Blockchain
+
+    style App fill:#fee2e2,stroke:#ef4444,color:#1a202c
+    style Sol fill:#fee2e2,stroke:#ef4444,color:#1a202c
+    style PG fill:#fef3c7,stroke:#f59e0b,color:#1a202c</pre>
+    </div>
+  </div>
+
+  <div class="section" id="stack">
+    <h2>Technology Stack</h2>
+    <table>
+      <thead><tr><th>Layer</th><th>Technology</th><th>Version</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Frontend</td><td>React</td><td>18.x (inferred)</td><td>react-router-dom, axios, jspdf, ethers.js</td></tr>
+        <tr><td>Backend</td><td>Flask (Python)</td><td>3.0.0</td><td>Flask-CORS 5.0.0, Werkzeug 3.0.1</td></tr>
+        <tr><td>ORM</td><td>SQLAlchemy / Flask-SQLAlchemy</td><td>2.0.23</td><td>PostgreSQL via psycopg2-binary 2.9.5</td></tr>
+        <tr><td>Database</td><td>PostgreSQL</td><td>Latest (Docker)</td><td>Single instance, no replica, no connection pool</td></tr>
+        <tr><td>Blockchain</td><td>Solidity + Hardhat</td><td>^0.8.0</td><td>CertificateIssuer.sol, ethers.js v5</td></tr>
+        <tr><td>Infrastructure</td><td>Docker + docker-compose</td><td>Latest</td><td>Frontend + Backend services; no DB service in compose</td></tr>
+        <tr><td>Timezone</td><td>pytz</td><td>2023.3</td><td>Used for timestamp handling</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section" id="quantitative">
+    <h2>Quantitative Profile</h2>
+    <table>
+      <thead><tr><th>Metric</th><th>Value</th><th>Assessment</th></tr></thead>
+      <tbody>
+        <tr><td>Backend API routes</td><td>9</td><td>&#10060; 0 authenticated</td></tr>
+        <tr><td>Smart contract functions</td><td>4</td><td>&#10060; 0 access-controlled</td></tr>
+        <tr><td>Flask models</td><td>4 (Univ, Admin, Stud, Certi)</td><td>&#9888;&#65039; 3 have __tablename__ typo</td></tr>
+        <tr><td>npm packages (direct)</td><td>12</td><td>&#10060; 8 critical CVEs (transitive)</td></tr>
+        <tr><td>Python dependencies</td><td>7</td><td>&#9888;&#65039; No bcrypt, no auth library</td></tr>
+        <tr><td>Docker services</td><td>2 (frontend, backend)</td><td>&#10060; No DB service (uses host.docker.internal)</td></tr>
+        <tr><td>Test files</td><td>0</td><td>&#10060; No automated tests</td></tr>
+        <tr><td>Security dependencies</td><td>0</td><td>&#10060; No bcrypt, no JWT, no rate limiting</td></tr>
+        <tr><td>CI/CD pipeline</td><td>None detected</td><td>&#10060; No automated security scanning</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- What Works Well -->
+  <div class="section-divider" id="section2">What Works Well</div>
+
+  <div class="section" id="strengths">
+    <h2>What Works Well</h2>
+
+    <div class="strength-card">
+      <h4>&#128313; Innovative Architecture: Web + Blockchain Integration</h4>
+      <p>The combination of a traditional web stack with blockchain-backed certificate verification is architecturally sound and genuinely valuable. The concept &#8212; using an immutable ledger to verify academic credentials &#8212; addresses a real-world problem. The system correctly separates concerns: web layer for CRUD, blockchain for trust anchoring.</p>
+    </div>
+
+    <div class="strength-card">
+      <h4>&#128313; Modern Python Backend with Good ORM Choice</h4>
+      <p>Flask 3.0.0 is a modern, actively maintained version. SQLAlchemy 2.0 with Flask-SQLAlchemy is the correct choice for a Python/PostgreSQL stack. The model definitions are structurally sound (aside from the __tablename__ typo).</p>
+    </div>
+
+    <div class="strength-card">
+      <h4>&#128313; Docker Containerization</h4>
+      <p>Containerizing both frontend and backend with Docker is the right approach for deployment consistency. Multi-service docker-compose setup is appropriate for development. The base image choices (Python 3.11, Node 20-alpine) are modern and appropriate.</p>
+    </div>
+
+    <div class="strength-card">
+      <h4>&#128313; Solidity Version Pragma is Properly Locked</h4>
+      <p>The smart contract uses <code>^0.8.0</code> which correctly enables built-in overflow protection (SafeMath is no longer needed). The data model for CertificateInfo (studentId, grade, program, timestamp) is well-structured.</p>
+    </div>
+
+    <div class="strength-card">
+      <h4>&#128313; React SPA with Proper Component Structure</h4>
+      <p>Using React for the frontend with react-router-dom for routing is appropriate. The axios-based API client pattern is standard. jspdf integration for certificate PDF download is a thoughtful UX feature.</p>
+    </div>
+  </div>
+
+  <!-- Risk Landscape -->
+  <div class="section-divider" id="section3">Risk Landscape</div>
+
+  <div class="section" id="critical-risks">
+    <h2>&#128308; Critical Risks</h2>
+
+    <h3><span class="risk-indicator risk-critical"></span>CRIT-1: No Authentication Layer Anywhere</h3>
+    <p>There is no authentication middleware on the Flask backend. All 9 API routes are publicly accessible to any HTTP client without credentials. Admin operations, student data retrieval, and certificate issuance all execute without identity verification. This is not a misconfiguration &#8212; there is no authentication code in the codebase at all.</p>
+    <p><strong>Blast radius:</strong> Complete. Any external party with network access to the API can read all data and trigger all state changes.</p>
+
+    <h3><span class="risk-indicator risk-critical"></span>CRIT-2: Plaintext Password Storage and Transmission</h3>
+    <p>Admin and Student passwords are stored as plaintext VARCHAR columns in PostgreSQL. Login endpoint performs string comparison. The GET /student_all endpoint returns the password field in JSON responses. There is no hashing, no salting, no password policy enforcement.</p>
+    <p><strong>Blast radius:</strong> Complete. A single database read or unauthenticated API call exposes all credentials.</p>
+
+    <h3><span class="risk-indicator risk-critical"></span>CRIT-3: Open Smart Contract Invalidates Core Value Proposition</h3>
+    <p>The issueCertificate() function is callable by any Ethereum address without restriction. This means the blockchain layer &#8212; which is the system's only differentiator from a standard web app &#8212; provides no trust guarantees. Any actor can issue fraudulent certificates for any student with any grade, and these cannot be revoked once on-chain.</p>
+    <p><strong>Blast radius:</strong> Existential. The system's purpose (trusted, immutable credentials) is eliminated before it can provide value.</p>
+
+    <h3><span class="risk-indicator risk-critical"></span>CRIT-4: Hardcoded Secrets in Version Control</h3>
+    <p>The Flask secret key ('vasthavik') is hardcoded in source code. PostgreSQL credentials (postgres:pgadmin) are hardcoded in both app.py and docker-compose.yml. Both are committed to git history, making credential rotation effectively impossible without a full git history rewrite.</p>
+
+    <h3><span class="risk-indicator risk-critical"></span>CRIT-5: Predictable Credential Generation Algorithm</h3>
+    <p>Student passwords are generated as <code>f"{first_name}{last_name}{year_of_birth}"</code>. University enrollment data is often available through institutional directories, social media, or direct enumeration. An attacker with access to student names and birth years can precompute all passwords.</p>
+  </div>
+
+  <div class="section" id="high-risks">
+    <h2>&#128993; High Risks</h2>
+
+    <h3><span class="risk-indicator risk-high"></span>HIGH-1: No Blockchain-Database Consistency Mechanism</h3>
+    <p>The certificate issuance flow (app.py) updates the PostgreSQL database first, then calls the Ethereum smart contract. If the blockchain transaction fails (gas issues, network timeout, nonce collision), the database shows the certificate as issued but no on-chain record exists. There is no retry mechanism, no rollback, no reconciliation process.</p>
+    <p><strong>Impact:</strong> Students may believe they have blockchain-verified certificates that do not actually exist on-chain. Employers verifying on-chain will find no record despite the web portal showing "verified."</p>
+
+    <h3><span class="risk-indicator risk-high"></span>HIGH-2: Single Database Instance &#8212; No Resilience</h3>
+    <p>The PostgreSQL database has no replica, no connection pooling configuration, no backup strategy visible in the codebase, and no health check in docker-compose. The database is accessed via host.docker.internal which fails on Linux production environments.</p>
+
+    <h3><span class="risk-indicator risk-high"></span>HIGH-3: Development Server in Production Docker Container</h3>
+    <p>The frontend Dockerfile uses <code>npm run start</code> (webpack-dev-server) instead of a production build. This means file watching, hot module replacement, and source maps are active in production. The bundle is unoptimized (typically 3-5x larger than production build).</p>
+  </div>
+
+  <div class="section" id="medium-risks">
+    <h2>&#128992; Medium Risks</h2>
+
+    <h3><span class="risk-indicator risk-medium"></span>MED-1: SQLAlchemy __tablename__ Typo Causes Silent Failures</h3>
+    <p>Three of four models use <code>__table__name</code> (double underscore) instead of <code>__tablename__</code>. SQLAlchemy silently ignores unknown class attributes, so the models fall back to default table naming (class name lowercase). This is a silent discrepancy that will cause query failures when using explicit table references or migrations.</p>
+
+    <h3><span class="risk-indicator risk-medium"></span>MED-2: No Input Validation Layer</h3>
+    <p>API routes directly access <code>request.json['key']</code> without checking Content-Type or key existence. Any malformed request crashes the endpoint with a 500 error and a stack trace visible to the client. This enables trivial DoS and information disclosure.</p>
+
+    <h3><span class="risk-indicator risk-medium"></span>MED-3: Smart Contract studentIds Array Grows Without Bound</h3>
+    <p>getAllCertificates() iterates the full studentIds array. No deduplication check allows the same student to appear multiple times. Gas cost makes this function unusable at scale.</p>
+
+    <h3><span class="risk-indicator risk-medium"></span>MED-4: No Test Coverage</h3>
+    <p>Zero test files detected across frontend (no .test.js), backend (no test_*.py), and smart contract (no test/*.js). No CI/CD pipeline. Changes are deployed with no automated verification.</p>
+  </div>
+
+  <!-- Deep Insights -->
+  <div class="section-divider" id="section4">Deep Insights &#8212; Cross-Cutting Patterns</div>
+
+  <div class="section" id="contradictions">
+    <h2>Configuration Contradictions</h2>
+
+    <div class="contradiction-card">
+      <h4>Development Database vs Production Intent</h4>
+      <div class="config-pair">
+        <div class="config-val">docker-compose.yml: host.docker.internal<br/>(macOS-only, development)</div>
+        <div class="vs-badge">VS</div>
+        <div class="config-val">EKS/production deployment<br/>(Linux, host.docker.internal fails)</div>
+      </div>
+      <p>The docker-compose configuration is written for macOS Docker Desktop. Any Linux-based deployment (which all major cloud platforms use) will fail to connect to the database at startup. The service appears to start but every database call raises a connection refused error.</p>
+    </div>
+
+    <div class="contradiction-card">
+      <h4>Blockchain Trust Model vs Open Contract</h4>
+      <div class="config-pair">
+        <div class="config-val">System purpose: "Immutable, trustworthy<br/>academic credential verification"</div>
+        <div class="vs-badge">VS</div>
+        <div class="config-val">issueCertificate() callable<br/>by any Ethereum address</div>
+      </div>
+      <p>The blockchain is marketed as providing trust guarantees, but the contract has no access control. The "immutable" property of blockchain works against the system &#8212; fraudulent certificates issued by anyone are permanently on-chain and cannot be revoked.</p>
+    </div>
+
+    <div class="contradiction-card">
+      <h4>Session Credentials vs Unrestricted CORS</h4>
+      <div class="config-pair">
+        <div class="config-val">Flask: supports_credentials=True<br/>(cookies included in requests)</div>
+        <div class="vs-badge">VS</div>
+        <div class="config-val">CORS: no origins restriction<br/>(any domain accepted)</div>
+      </div>
+      <p>Enabling credentials without restricting origins means any website can make authenticated requests using the user's session cookie. This is a textbook CSRF setup.</p>
+    </div>
+  </div>
+
+  <div class="section" id="stress">
+    <h2>Stress Projection &#8212; What Breaks at Scale</h2>
+
+    <div class="stress-card">
+      <h4>Load Capacity Analysis</h4>
+      <div class="stress-tiers">
+        <div class="stress-tier st-current">Current<br/>~10 concurrent<br/>~200ms p95</div>
+        <div class="stress-tier st-warn">50 concurrent<br/>SQLAlchemy<br/>connection exhaustion</div>
+        <div class="stress-tier st-danger">200 concurrent<br/>PostgreSQL max_connections<br/>hit, 500 errors</div>
+        <div class="stress-tier st-critical">1,000 concurrent<br/>OOM, container<br/>restart loop</div>
+        <div class="stress-tier st-catastrophic">10k burst<br/>(viral/attack)<br/>Full outage</div>
+        <div class="stress-tier st-scaling">Horizontal<br/>Blocked by<br/>single DB</div>
+      </div>
+    </div>
+
+    <div class="stress-card">
+      <h4>Smart Contract Gas Projection</h4>
+      <div class="stress-tiers">
+        <div class="stress-tier st-current">100 students<br/>getAllCertificates(): ~50k gas<br/>Fine</div>
+        <div class="stress-tier st-warn">1,000 students<br/>~500k gas<br/>Slow but works</div>
+        <div class="stress-tier st-danger">5,000 students<br/>~2.5M gas<br/>Near block limit</div>
+        <div class="stress-tier st-critical">10,000 students<br/>~5M+ gas<br/>Exceeds block limit<br/>getAllCertificates() unusable</div>
+        <div class="stress-tier st-scaling">Fix: pagination<br/>+ deduplication<br/>check</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="contracts">
+    <h2>Implicit Contracts &#8212; Hidden Assumptions</h2>
+
+    <div class="assumption-card">
+      <h4>Assumption: Blockchain transaction always succeeds before response</h4>
+      <p>app.py updates the database, then calls the smart contract. The code implicitly assumes both succeed atomically.</p>
+      <div class="scenario">"A developer adds a gas price check before the ETH call &#8594; The check correctly rejects the transaction &#8594; But the DB already committed &#8594; Student shows as 'certified' on the web portal but has no on-chain record. Employer verification fails silently."</div>
+    </div>
+
+    <div class="assumption-card">
+      <h4>Assumption: host.docker.internal resolves to the database host</h4>
+      <p>docker-compose.yml hardcodes host.docker.internal as the database hostname.</p>
+      <div class="scenario">"DevOps deploys to EKS (Linux). Container starts, Flask imports complete, first API call hits SQLAlchemy &#8594; OperationalError: could not translate host name 'host.docker.internal'. Zero requests served after deployment. Appears to be a code bug, not infrastructure."</div>
+    </div>
+
+    <div class="assumption-card">
+      <h4>Assumption: __table__name with double underscore sets the table name</h4>
+      <p>models.py uses __table__name (typo) which SQLAlchemy silently ignores.</p>
+      <div class="scenario">"A developer writes a migration referencing 'univ' table. SQLAlchemy actually creates 'univ' (class name), but the model silently uses default naming. Migration targets wrong table. Alembic auto-detect generates spurious migration with full table drop/create."</div>
+    </div>
+
+    <div class="assumption-card">
+      <h4>Assumption: Only authorized admins access the API</h4>
+      <p>All 9 routes are public with no authentication. The system implicitly assumes only the admin UI calls these endpoints.</p>
+      <div class="scenario">"Student discovers the API URL from browser DevTools. Calls GET /student_all &#8594; receives all 500 student records including passwords. Shares on social media. No audit log exists to detect this."</div>
+    </div>
+  </div>
+
+  <div class="section" id="coupling">
+    <h2>Behavioral Coupling &#8212; Invisibly Connected Modules</h2>
+
+    <div class="coupling-card">
+      <h4>Flask app.py &#8596; SQLAlchemy models.py</h4>
+      <p>The Flask app imports models directly and uses db.session. The __tablename__ typo in models.py changes the actual table name from what the admin thinks it is. Any query using explicit table names in raw SQL (or Alembic migrations) will reference the wrong table. Changing models.py column types requires a Flask migration (alembic), but no migration infrastructure is set up.</p>
+    </div>
+
+    <div class="coupling-card">
+      <h4>Backend Certificate API &#8596; Smart Contract State</h4>
+      <p>app.py updates the DB and the blockchain independently with no distributed transaction. The blockchain txHash is stored in the DB, but there is no verification that the transaction actually confirmed on-chain. A UI showing "Certificate verified on blockchain" could be displaying a txHash for a failed transaction.</p>
+    </div>
+
+    <div class="coupling-card">
+      <h4>Frontend ethers.js &#8596; Backend Blockchain State</h4>
+      <p>The React frontend uses ethers.js directly to interact with the contract AND the backend also writes to the contract. There is no single source of truth for blockchain state. A frontend write that the backend doesn't know about (or vice versa) creates a split-brain state.</p>
+    </div>
+  </div>
+
+  <div class="section" id="deadpaths">
+    <h2>Dead Paths &#8212; Code That May Not Behave as Expected</h2>
+
+    <div class="dead-path-card">
+      <h4>SQLAlchemy models with __table__name typo</h4>
+      <p>The double-underscore attribute <code>__table__name</code> is not a SQLAlchemy reserved attribute. SQLAlchemy uses the class name (lowercase) as the table name by default. The intended table names 'univ', 'admin', 'stud' may or may not match &#8212; depends on whether the class names match. If they do, the code works accidentally; if not, queries silently hit wrong tables.</p>
+    </div>
+
+    <div class="dead-path-card">
+      <h4>getAllCertificates() at university scale</h4>
+      <p>The smart contract function returns all certificates by iterating the full studentIds array. At 10,000+ students this function will exceed the Ethereum block gas limit and revert. Any frontend code calling this function will receive an error with no fallback pagination.</p>
+    </div>
+
+    <div class="dead-path-card">
+      <h4>Flask session without SECRET_KEY in environment</h4>
+      <p>If the code is updated to use <code>os.environ.get('SECRET_KEY')</code> but the environment variable is not set, the fallback <code>None</code> would cause Flask to refuse to start. Currently the hardcoded secret prevents this failure mode, meaning the "fix" for the secret key issue introduces a startup failure mode if not paired with the .env setup.</p>
+    </div>
+  </div>
+
+  <!-- Remediation Roadmap -->
+  <div class="section-divider" id="section5">Remediation Roadmap</div>
+
+  <div class="section" id="quick-wins">
+    <h2>&#9889; Quick Wins &#8212; Fix Today</h2>
+    <div class="sprint-card">
+      <h4>Sprint: 6 fixes, ~75 minutes total</h4>
+      <div class="sprint-meta">Safe changes with no user impact. Can be merged in a single PR today.</div>
+
+      <h3>Fix 1: SECRET_KEY (5 min)</h3>
+      <pre>-app.secret_key = 'vasthavik'
++app.secret_key = os.environ.get('SECRET_KEY') or exit('SECRET_KEY env var required')</pre>
+
+      <h3>Fix 2: Random student passwords (15 min)</h3>
+      <pre>+import secrets
+-password = f"{first_name}{last_name}{year_of_birth}"
++password = secrets.token_urlsafe(16)</pre>
+
+      <h3>Fix 3: Database credentials to .env (30 min)</h3>
+      <pre># .env (gitignored)
+DATABASE_URL=postgresql://postgres:CHANGE_ME@localhost:5432/vastavik
+SECRET_KEY=your-cryptographically-random-secret
+
+# docker-compose.yml
+-      DATABASE_URL: postgresql://postgres:pgadmin@host.docker.internal:5432/vastavik
++      DATABASE_URL: ${DATABASE_URL}
++      SECRET_KEY: ${SECRET_KEY}</pre>
+
+      <h3>Fix 4: Restrict CORS (10 min)</h3>
+      <pre>-CORS(app, supports_credentials=True)
++CORS(app, supports_credentials=True, origins=['http://localhost:3000'])</pre>
+
+      <h3>Fix 5: Fix __tablename__ typo (5 min)</h3>
+      <pre>-    __table__name = "univ"   # 3 occurrences in models.py
++    __tablename__ = "univ"</pre>
+
+      <h3>Fix 6: Frontend production build (10 min)</h3>
+      <pre>-CMD ["npm","run","start"]
++RUN npm run build
++RUN npm install -g serve
++CMD ["serve","-s","build","-l","3000"]</pre>
+    </div>
+  </div>
+
+  <div class="section" id="fix-sprint">
+    <h2>&#128293; Fix This Sprint (Security Sprint Required)</h2>
+    <table>
+      <thead><tr><th>Priority</th><th>Finding</th><th>Action</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-critical">Critical</span></td><td>No authentication</td><td>Add Flask-Login or JWT auth middleware with @require_auth decorator on all protected routes</td><td>2 hrs</td></tr>
+        <tr><td><span class="badge badge-critical">Critical</span></td><td>Plaintext passwords</td><td>pip install bcrypt==4.1.2, hash on create, verify on login, DB migration for existing users</td><td>1 hr + migration</td></tr>
+        <tr><td><span class="badge badge-critical">Critical</span></td><td>Open smart contract</td><td>Add OpenZeppelin Ownable + onlyAuthorized modifier + authorized issuers mapping. Redeploy (immutable).</td><td>2 hrs</td></tr>
+        <tr><td><span class="badge badge-critical">Critical</span></td><td>Blockchain-DB consistency</td><td>Implement pending_blockchain status: update DB to pending, confirm after txn receipt, rollback on failure</td><td>4 hrs</td></tr>
+        <tr><td><span class="badge badge-important">High</span></td><td>npm CVEs (8 critical)</td><td>cd frontend &amp;&amp; npm audit fix --force, then upgrade ethers to v6.x</td><td>4 hrs</td></tr>
+        <tr><td><span class="badge badge-important">High</span></td><td>host.docker.internal</td><td>Add db service to docker-compose.yml and use db:5432 as hostname</td><td>30 min</td></tr>
+        <tr><td><span class="badge badge-important">High</span></td><td>No input validation</td><td>Add request.is_json check + .get() pattern + return 400 with error message throughout</td><td>1 hr</td></tr>
+      </tbody>
+    </table>
+    <div class="inaction-cost">
+      <strong>Cost of inaction:</strong> Every week without authentication is a week where the API is publicly exploitable. With the blockchain being mainnet, fraudulent certificates issued now are permanent.
+    </div>
+  </div>
+
+  <div class="section" id="next-quarter">
+    <h2>&#128203; Plan for Next Quarter</h2>
+    <table>
+      <thead><tr><th>Priority</th><th>Finding</th><th>Action</th><th>Effort</th><th>Prerequisites</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-important">High</span></td><td>No test coverage</td><td>Add pytest for backend routes, React Testing Library for frontend, Hardhat tests for smart contract</td><td>8 hrs</td><td>Auth must be implemented first (auth makes testing harder to retrofit)</td></tr>
+        <tr><td><span class="badge badge-important">High</span></td><td>No CI/CD pipeline</td><td>GitHub Actions: lint + test + npm audit + semgrep + gitleaks on every PR</td><td>4 hrs</td><td>Tests first</td></tr>
+        <tr><td><span class="badge badge-important">High</span></td><td>Database resilience</td><td>Add read replica, connection pooling (pgbouncer or SQLAlchemy pool config), automated backups</td><td>1 week</td><td>None</td></tr>
+        <tr><td><span class="badge badge-nice">Medium</span></td><td>Smart contract pagination</td><td>Replace getAllCertificates() with paginated view + deduplication mapping. Requires new contract version.</td><td>4 hrs</td><td>Access control fix first</td></tr>
+        <tr><td><span class="badge badge-nice">Medium</span></td><td>Rate limiting</td><td>Flask-Limiter on auth endpoints (5/min), API endpoints (60/min)</td><td>30 min</td><td>Auth first</td></tr>
+        <tr><td><span class="badge badge-nice">Medium</span></td><td>Audit logging</td><td>Log all certificate issuances, admin actions, auth events to structured log store</td><td>2 hrs</td><td>Auth first</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section" id="decisions">
+    <h2>Decisions to Make</h2>
+
+    <div class="decision-card">
+      <h4>Decision: Session-based Auth vs JWT for the Flask API</h4>
+      <p>The current codebase has Flask sessions available (app.secret_key). The frontend is a SPA. This creates a tension.</p>
+      <div class="inaction-cost"><strong>Cost of inaction:</strong> Every week without auth is a week the API is publicly exploitable.</div>
+      <div class="option-grid">
+        <div class="option-card">
+          <h5>Option A: Keep Flask Sessions</h5>
+          <ul>
+            <li>Lower implementation effort (~2 hrs)</li>
+            <li>Works well with existing Flask infrastructure</li>
+            <li>Requires CORS credentials=True (already set)</li>
+            <li>Cookie-based: works from browser, not from mobile/CLI</li>
+          </ul>
+        </div>
+        <div class="option-card">
+          <h5>Option B: JWT (Flask-JWT-Extended)</h5>
+          <ul>
+            <li>Stateless, works with mobile/CLI in future</li>
+            <li>More implementation effort (~4 hrs)</li>
+            <li>No server-side session storage needed</li>
+            <li>Better for future microservices expansion</li>
+          </ul>
+        </div>
+      </div>
+      <p><strong>Recommendation:</strong> Start with Flask sessions (Option A) to ship auth quickly. Migrate to JWT if/when mobile app or API-as-a-product needs arise.</p>
+    </div>
+
+    <div class="decision-card">
+      <h4>Decision: Which Ethereum Network for Production?</h4>
+      <p>The smart contract currently deploys to Hardhat local network. Production requires a decision on which network to use.</p>
+      <div class="option-grid">
+        <div class="option-card">
+          <h5>Option A: Ethereum Mainnet</h5>
+          <ul>
+            <li>Maximum trust and longevity</li>
+            <li>Gas costs: ~$5-50 per certificate issuance</li>
+            <li>Cannot be undone if fraudulent certificates issued before fix</li>
+          </ul>
+        </div>
+        <div class="option-card">
+          <h5>Option B: Polygon / Optimism L2</h5>
+          <ul>
+            <li>Gas costs: ~$0.01-0.10 per issuance</li>
+            <li>Still EVM-compatible, ethers.js works unchanged</li>
+            <li>Slightly less "prestigious" than mainnet</li>
+          </ul>
+        </div>
+      </div>
+      <p><strong>Recommendation:</strong> Fix the access control issue on testnet first, then deploy to Polygon for cost-effective production use. Never deploy the current open contract to mainnet.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Generated by Opsera DevOps Architecture Agent &nbsp;|&nbsp; vasthavik &nbsp;|&nbsp; 2026-03-10 &nbsp;|&nbsp; 3-Phase Analysis: Fast Scan + Deep Dive + Report Generation
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true, theme: 'neutral', securityLevel: 'loose',
+    flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis', padding: 20 },
+    sequence: { useMaxWidth: false, actorMargin: 80, messageFontSize: 14 },
+    themeVariables: {
+      background: '#ffffff', primaryColor: '#dbeafe', primaryTextColor: '#1e293b',
+      primaryBorderColor: '#93c5fd', lineColor: '#64748b', textColor: '#1e293b',
+      mainBkg: '#ffffff', nodeBorder: '#93c5fd', clusterBkg: '#f8fafc',
+      actorBkg: '#e0e7ff', actorBorder: '#818cf8', actorTextColor: '#1e293b',
+      signalColor: '#64748b', signalTextColor: '#1e293b'
+    }
+  });
+</script>
+</body>
+</html>

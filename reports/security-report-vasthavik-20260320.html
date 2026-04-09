@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAhQAAAGFCAYAAAClqGqeAAAAxHpUWHRSYXcgcHJvZmlsZSB0eXBlIGV4aWYAAHjabVBBEsMgCLz7ij4BAQ0+xzTpTH/Q53cNpBPbknFZWd0gaX89H+k2grMmLYvVViittOGmjTuIkUc/MJMO6BslxupcT1aCMrIgiwvW4eJZz4sPQwcWrkb3ENZZaMqZ7cvI+yEZHQ2+hVELI2EXchi0fxbVZsv1CetOc5ivNEBtbvtmv2B6W8F/hHmXLAQUUW9AxpIkHUIGkjQcBIIzvi4qHGQQyL85nZDeRGdkechY9+UBL/dfjGgmQMkAAAAASUVORK5CYII=">
+  <title>Security Scan Report — vasthavik</title>
+  <style>
+    :root {
+      --primary: #1a365d; --primary-light: #2a4a7f; --accent: #3182ce; --accent-hover: #2b6cb0;
+      --bg: #f7fafc; --card: #ffffff; --text: #2d3748; --text-light: #718096;
+      --border: #e2e8f0; --border-light: #edf2f7;
+      --success: #38a169; --warning: #d69e2e; --danger: #e53e3e; --info: #3182ce;
+      --critical: #c53030; --high: #c05621; --medium: #b7791f; --low: #276749;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+    h2 { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.01em; color: var(--primary); }
+    h3 { font-size: 1.1rem; font-weight: 600; color: var(--primary-light); margin-top: 1.25rem; margin-bottom: 0.5rem; }
+    h4 { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-top: 1rem; margin-bottom: 0.4rem; }
+    p { margin-bottom: 0.75rem; }
+    a { color: var(--accent); text-decoration: none; }
+    ul, ol { margin: 0.5rem 0 0.75rem 1.5rem; } li { margin-bottom: 0.25rem; }
+    .header { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: #fff; padding: 2.5rem 2rem; }
+    .header-content { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; gap: 1.5rem; }
+    .header h1 { color: #fff; margin-bottom: 0.4rem; }
+    .header .meta { opacity: 0.85; font-size: 0.875rem; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem 2rem; margin-bottom: 2rem; }
+    .toc h2 { margin-bottom: 0.75rem; font-size: 1.1rem; border: none; padding: 0; }
+    .toc ol { margin-left: 1.25rem; } .toc li { padding: 0.2rem 0; } .toc a { font-size: 0.95rem; }
+    .section { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .section h2 { border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-bottom: 1.25rem; }
+    .act-divider { text-align: center; padding: 1.5rem 0; margin: 1rem 0; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-light); border-top: 2px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    thead th { background: var(--primary); color: #fff; padding: 0.65rem 0.75rem; text-align: left; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    tbody td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border-light); }
+    tbody tr:nth-child(even) { background: #f8fafc; } tbody tr:hover { background: #edf2f7; }
+    .risk-score-container { display: flex; align-items: center; justify-content: center; gap: 3rem; padding: 2rem; background: var(--card); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1.5rem; }
+    .score-ring { position: relative; width: 180px; height: 180px; }
+    .score-ring svg { transform: rotate(-90deg); }
+    .score-ring circle { fill: none; stroke-width: 12; }
+    .score-ring .bg { stroke: var(--border); }
+    .score-ring .value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+    .score-ring .percentage { font-size: 2.5rem; font-weight: 700; }
+    .score-ring .label { color: var(--text-light); font-size: 0.875rem; }
+    .severity-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .severity-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    .severity-card .count { font-size: 2.5rem; font-weight: 700; }
+    .severity-card .label { color: var(--text-light); font-size: 0.8rem; margin-top: 0.25rem; }
+    .severity-card.critical .count { color: var(--critical); }
+    .severity-card.high .count { color: var(--high); }
+    .severity-card.medium .count { color: var(--medium); }
+    .severity-card.low .count { color: var(--low); }
+    .scan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    .scan-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; padding: 1rem; text-align: center; }
+    .scan-card .icon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .scan-card .name { font-size: 0.8rem; font-weight: 600; }
+    .scan-card .status { font-size: 0.75rem; margin-top: 0.25rem; }
+    .scan-card.passed .status { color: var(--success); }
+    .scan-card.failed .status { color: var(--danger); }
+    .scan-card.skipped .status { color: var(--text-light); }
+    .finding { background: #f8fafc; border-radius: 6px; padding: 1rem; margin-bottom: 0.75rem; border-left: 4px solid var(--border); }
+    .finding.critical { border-left-color: #e53e3e; }
+    .finding.high { border-left-color: #dd6b20; }
+    .finding.medium { border-left-color: #d69e2e; }
+    .finding.low { border-left-color: #38a169; }
+    .finding-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+    .finding-title { font-weight: 600; }
+    .finding-location { font-family: 'SF Mono', 'Fira Code', Menlo, monospace; font-size: 0.75rem; background: #edf2f7; padding: 0.25rem 0.5rem; border-radius: 4px; margin: 0.5rem 0; border: 1px solid var(--border-light); }
+    .severity { padding: 0.2rem 0.65rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+    .severity-critical { background: #fed7d7; color: #c53030; }
+    .severity-high { background: #feebc8; color: #c05621; }
+    .severity-medium { background: #fefcbf; color: #975a16; }
+    .severity-low { background: #c6f6d5; color: #276749; }
+    .category-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; background: #ebf8ff; color: var(--accent); border: 1px solid #bee3f8; }
+    .cve-badge { font-family: 'SF Mono', 'Fira Code', Menlo, monospace; font-size: 0.75rem; background: #fff5f5; color: #c53030; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #fed7d7; }
+    .remediation-box { background: #f0fff4; border: 1px solid #c6f6d5; border-radius: 6px; padding: 0.75rem; margin-top: 0.75rem; font-size: 0.85rem; }
+    .remediation-box strong { color: var(--success); }
+    .sprint-card { border: 2px solid var(--success); border-radius: 8px; padding: 1.5rem; margin: 1rem 0; background: #f0fff4; }
+    .sprint-card h4 { color: #276749; margin-top: 0; }
+    .sprint-card .sprint-meta { font-size: 0.85rem; color: var(--text-light); margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #c6f6d5; }
+    .sprint-card .pr-description { background: #1a202c; color: #e2e8f0; padding: 1rem; border-radius: 6px; font-family: 'SF Mono', 'Fira Code', Menlo, monospace; font-size: 0.8rem; white-space: pre-wrap; margin-top: 1rem; }
+    code { background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace; font-size: 0.85em; }
+    pre { background: #1a202c; color: #e2e8f0; padding: 1rem 1.25rem; border-radius: 8px; overflow-x: auto; font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace; font-size: 0.85rem; line-height: 1.5; border: 1px solid #2d3748; margin: 0.75rem 0; }
+    .footer { text-align: center; padding: 2rem 1rem; color: var(--text-light); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: 1rem; }
+    details { margin: 0.5rem 0; border: 1px solid var(--border-light); border-radius: 6px; }
+    details summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; padding: 0.65rem 1rem; background: #f7fafc; border-radius: 6px; list-style: none; }
+    details summary::before { content: "▶  "; font-size: 0.7rem; margin-right: 0.4rem; }
+    details[open] summary::before { content: "▼  "; }
+    details[open] summary { border-bottom: 1px solid var(--border-light); border-radius: 6px 6px 0 0; }
+    details > div, details > p, details > ul, details > table { padding: 1rem; }
+    @media (max-width: 768px) { .severity-grid { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+<div class="header">
+  <div class="header-content">
+    <div class="header-text">
+      <h1>Security Scan Report</h1>
+      <div class="meta">vasthavik | Scan: full | Severity: all | 3/20/2026 | Opsera DevOps Agent</div>
+    </div>
+  </div>
+</div>
+<div class="container">
+
+  <div class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#executive-summary">Executive Summary</a></li>
+      <li><a href="#risk-score">Risk Score &amp; Severity Breakdown</a></li>
+      <li><a href="#scan-coverage">Scan Coverage</a></li>
+      <li><a href="#findings-secrets">Secrets Detection</a></li>
+      <li><a href="#findings-dependencies">Dependency Vulnerabilities</a></li>
+      <li><a href="#findings-sast">Static Analysis (SAST)</a></li>
+      <li><a href="#findings-container">Container &amp; Dockerfile</a></li>
+      <li><a href="#remediation-roadmap">Remediation Roadmap</a>
+        <ol>
+          <li><a href="#quick-wins">Quick Wins — Fix Today</a></li>
+          <li><a href="#fix-this-sprint">Fix This Sprint</a></li>
+          <li><a href="#plan-next-quarter">Plan For Next Quarter</a></li>
+        </ol>
+      </li>
+    </ol>
+  </div>
+
+  <!-- Executive Summary -->
+  <div class="section" id="executive-summary">
+    <h2>Executive Summary</h2>
+    <p>Full security scan of <strong>vasthavik</strong> (Flask + React + Solidity / Docker Compose stack) completed on <strong>March 20, 2026</strong> using 5 scanners: gitleaks, semgrep, trivy, npm audit, and hadolint. Checkov (IaC) could not execute due to a sandbox permission issue and is noted as <em>FAILED</em>. The scan found <strong>254 total findings</strong>, with a risk score of <strong>95.5 / 100 (Critical Risk)</strong> driven primarily by unpatched CVEs in blockchain and frontend npm dependency trees.</p>
+    <table>
+      <thead><tr><th>Category</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td>Secrets (gitleaks)</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td></tr>
+        <tr><td>Dependencies — npm audit (frontend)</td><td>8</td><td>37</td><td>15</td><td>15</td><td>75</td></tr>
+        <tr><td>Dependencies — trivy fs (all)</td><td>18</td><td>66</td><td>56</td><td>34</td><td>174</td></tr>
+        <tr><td>SAST (semgrep)</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
+        <tr><td>Container / Dockerfile (hadolint)</td><td>0</td><td>0</td><td>2</td><td>1</td><td>3</td></tr>
+        <tr><td>IaC (checkov)</td><td colspan="5" style="color:var(--danger);">FAILED — scanner could not execute</td></tr>
+        <tr style="font-weight:700;background:#fff5f5;"><td>TOTAL</td><td style="color:var(--critical);">26</td><td style="color:var(--high);">104</td><td style="color:var(--medium);">74</td><td style="color:var(--low);">50</td><td><strong>254</strong></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Key risk areas:</strong> Blockchain npm dependencies contain multiple CRITICAL CVEs (elliptic, cipher-base, form-data). Frontend depends on ethers@5.x (known elliptic CVE). Backend Werkzeug is outdated (CVE-2024-34069 — debug mode bypass). A live secret key was detected in the <code>.env</code> file on disk (covered by .gitignore, but risk exists if .env is accidentally committed).</p>
+  </div>
+
+  <!-- Risk Score -->
+  <div class="section" id="risk-score">
+    <h2>Risk Score &amp; Severity Breakdown</h2>
+    <div class="risk-score-container">
+      <div class="score-ring">
+        <svg width="180" height="180">
+          <circle class="bg" cx="90" cy="90" r="78" fill="none" stroke="#e2e8f0" stroke-width="12"/>
+          <circle cx="90" cy="90" r="78" fill="none" stroke="#c53030" stroke-width="12"
+                  stroke-linecap="round"
+                  stroke-dasharray="490"
+                  stroke-dashoffset="22"
+                  style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+        </svg>
+        <div class="value">
+          <div class="percentage" style="color:#c53030;">95.5</div>
+          <div class="label" style="color:#c53030;font-weight:600;">Critical Risk</div>
+        </div>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:0.8rem;color:var(--text-light);margin-bottom:1rem;">
+      Score = min(100, round(log₁₀(26×100 + 104×30 + 74×10 + 50×3 + 1) × 25)) = min(100, round(log₁₀(6,761) × 25)) ≈ <strong>95.5</strong>
+    </p>
+    <div class="severity-grid">
+      <div class="severity-card critical"><div class="count">26</div><div class="label">Critical</div></div>
+      <div class="severity-card high"><div class="count">104</div><div class="label">High</div></div>
+      <div class="severity-card medium"><div class="count">74</div><div class="label">Medium</div></div>
+      <div class="severity-card low"><div class="count">50</div><div class="label">Low</div></div>
+    </div>
+  </div>
+
+  <!-- Scan Coverage -->
+  <div class="section" id="scan-coverage">
+    <h2>Scan Coverage</h2>
+    <div class="scan-grid">
+      <div class="scan-card passed"><div class="icon">🔑</div><div class="name">Secrets (gitleaks)</div><div class="status">✓ Passed</div></div>
+      <div class="scan-card passed"><div class="icon">📦</div><div class="name">Dependencies (npm + trivy)</div><div class="status">✓ Passed</div></div>
+      <div class="scan-card passed"><div class="icon">🔍</div><div class="name">SAST (semgrep)</div><div class="status">✓ Passed</div></div>
+      <div class="scan-card failed"><div class="icon">🏗️</div><div class="name">IaC (checkov)</div><div class="status">✗ Failed</div></div>
+      <div class="scan-card passed"><div class="icon">🐳</div><div class="name">Container (hadolint)</div><div class="status">✓ Passed</div></div>
+      <div class="scan-card skipped"><div class="icon">📊</div><div class="name">SonarQube</div><div class="status">— Skipped</div></div>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-light);">
+      <strong>Checkov failed</strong> — the scanner requires write access to its temp directory (sandbox restriction). Run manually: <code>checkov -d . --framework dockerfile docker_compose -o json</code>.
+      <br><strong>SonarQube</strong> — not configured in this project. Add a <code>sonar-project.properties</code> file and CI step to enable.
+    </p>
+  </div>
+
+  <!-- Secrets -->
+  <div class="section" id="findings-secrets">
+    <h2>Secrets Detection</h2>
+    <p>Scanned with <strong>gitleaks v8</strong> — source scan (no-git mode) across 1.23 MB of project files.</p>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">Generic API Key / Secret Key exposed on disk</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <div class="finding-location">.env : line 3</div>
+      <p>Rule: <code>generic-api-key</code>. A high-entropy value matching a generic API/secret key pattern was found in the local <code>.env</code> file. Value masked: <code>SECRET_KEY=****</code>.</p>
+      <p><strong>Risk:</strong> If <code>.env</code> is accidentally committed or accessed by an attacker (e.g., via directory traversal in the Flask app), the secret key can be used to forge session cookies, leading to full account takeover.</p>
+      <div class="remediation-box">
+        <strong>Fix:</strong>
+        <ul>
+          <li>Confirm <code>.env</code> is listed in <code>.gitignore</code> (it is — ✓ already done).</li>
+          <li>Rotate the <code>SECRET_KEY</code> value: <code>python3 -c "import secrets; print(secrets.token_hex(32))"</code></li>
+          <li>Use a secrets manager (AWS Secrets Manager, HashiCorp Vault, or Doppler) for production.</li>
+          <li>Never hardcode secrets in source files.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependencies -->
+  <div class="section" id="findings-dependencies">
+    <h2>Dependency Vulnerabilities</h2>
+    <p>Scanned with <strong>trivy fs</strong> (vuln + secret + misconfig) and <strong>npm audit</strong> (frontend). Combined: <strong>26 Critical, 103 High</strong> across blockchain, backend, and frontend dependency trees.</p>
+
+    <h3>🔴 Critical — Blockchain / Frontend</h3>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">elliptic — ECDSA signature malleability</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <span class="cve-badge">GHSA-vjh7-7g9h-fjfh</span>
+      <div class="finding-location">blockchain/package-lock.json — elliptic 6.5.4 / 6.6.0</div>
+      <p>The <code>elliptic</code> library (used by ethers.js v5) is vulnerable to ECDSA signature malleability. Attackers can craft alternative valid signatures for the same message, potentially enabling replay attacks on signed blockchain transactions.</p>
+      <div class="remediation-box"><strong>Fix:</strong> <code>npm install elliptic@6.6.1</code> in <code>blockchain/</code>. Migrate to <code>ethers@^6</code> which bundles a patched version.</div>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">cipher-base — cryptographic weakness</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <span class="cve-badge">CVE-2025-9287</span>
+      <div class="finding-location">blockchain/package-lock.json — cipher-base 1.0.4</div>
+      <p>Critical cryptographic vulnerability in <code>cipher-base</code> (a dependency of many Node.js crypto packages). Allows potential key recovery or plaintext exposure.</p>
+      <div class="remediation-box"><strong>Fix:</strong> <code>npm install cipher-base@1.0.5</code> or run <code>npm audit fix --force</code> in <code>blockchain/</code>.</div>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">form-data — prototype pollution / SSRF</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <span class="cve-badge">CVE-2025-7783</span>
+      <div class="finding-location">blockchain/package-lock.json — form-data 2.5.2, 4.0.1</div>
+      <p>The <code>form-data</code> package has a critical vulnerability enabling prototype pollution or SSRF (server-side request forgery) under specific conditions.</p>
+      <div class="remediation-box"><strong>Fix:</strong> <code>npm install form-data@4.0.4</code> in <code>blockchain/</code> and <code>npm audit fix</code>.</div>
+    </div>
+
+    <div class="finding critical">
+      <div class="finding-header">
+        <span class="finding-title">@ethersproject/signing-key — ECDSA (npm audit)</span>
+        <span class="severity severity-critical">Critical</span>
+      </div>
+      <span class="cve-badge">via elliptic</span>
+      <div class="finding-location">frontend/package.json — @ethersproject/signing-key ≤5.7.0</div>
+      <p>The frontend uses <code>ethers@5.x</code> which transitively depends on vulnerable <code>elliptic</code>. Same ECDSA signature malleability risk applies to frontend wallet signing operations.</p>
+      <div class="remediation-box"><strong>Fix:</strong> Migrate frontend to <code>ethers@^6</code>: <code>npm install ethers@latest</code>. Review breaking changes in ethers v6 migration guide.</div>
+    </div>
+
+    <h3>🟠 High — Backend Python</h3>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">Werkzeug — debugger PIN bypass</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <span class="cve-badge">CVE-2024-34069</span>
+      <div class="finding-location">backend/requirements.txt — Werkzeug 3.0.1</div>
+      <p>Werkzeug's debug console PIN can be bypassed by a remote attacker if the debugger is enabled. This gives full RCE on the Flask server. Fixed in 3.0.3.</p>
+      <div class="remediation-box"><strong>Fix:</strong> Update <code>requirements.txt</code>: <code>Werkzeug&gt;=3.0.3</code>. Ensure <code>FLASK_DEBUG=0</code> in production.</div>
+    </div>
+
+    <h3>🟠 High — Blockchain/Frontend npm (top 5 of 103)</h3>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">axios — SSRF / open redirect</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <span class="cve-badge">CVE-2025-27152</span> <span class="cve-badge">CVE-2025-58754</span> <span class="cve-badge">CVE-2026-25639</span>
+      <div class="finding-location">blockchain/package-lock.json, frontend — axios 1.7.7</div>
+      <p>Multiple CVEs in <code>axios@1.7.x</code>: SSRF, open redirect, and request smuggling. Fixed in 1.8.2+ / 1.12.0+ / 1.13.5.</p>
+      <div class="remediation-box"><strong>Fix:</strong> <code>npm install axios@latest</code> in both <code>blockchain/</code> and <code>frontend/</code>.</div>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">minimatch — ReDoS (Regular Expression Denial of Service)</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <span class="cve-badge">CVE-2026-26996</span> <span class="cve-badge">CVE-2026-27903</span> <span class="cve-badge">CVE-2026-27904</span>
+      <div class="finding-location">backend/package-lock.json — minimatch 3.1.2</div>
+      <p>Multiple ReDoS vulnerabilities in <code>minimatch 3.1.2</code>. Attacker can craft inputs causing catastrophic backtracking.</p>
+      <div class="remediation-box"><strong>Fix:</strong> <code>npm install minimatch@3.1.3</code> or update via <code>npm audit fix</code>.</div>
+    </div>
+
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">cross-spawn — ReDoS</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <span class="cve-badge">CVE-2024-21538</span>
+      <div class="finding-location">backend/package-lock.json, frontend — cross-spawn 7.0.3</div>
+      <p>ReDoS vulnerability in <code>cross-spawn</code>. Fixed in 7.0.5.</p>
+      <div class="remediation-box"><strong>Fix:</strong> <code>npm audit fix</code> in both <code>backend/</code> and <code>frontend/</code>.</div>
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-light);margin-top:1rem;">
+      <em>+ 98 additional High findings across blockchain, frontend, and backend package-lock files. Run <code>npm audit --json</code> and <code>trivy fs . --format table</code> for the full list.</em>
+    </p>
+  </div>
+
+  <!-- SAST -->
+  <div class="section" id="findings-sast">
+    <h2>Static Analysis (SAST)</h2>
+    <p>Scanned with <strong>semgrep</strong> using <code>p/python</code> and <code>p/javascript</code> rulesets across <code>backend/</code>, <code>frontend/src/</code>, and <code>blockchain/contracts/</code>.</p>
+
+    <div class="finding medium">
+      <div class="finding-header">
+        <span class="finding-title">Flask app running with host=0.0.0.0 (public exposure)</span>
+        <span class="severity severity-medium">Warning</span>
+      </div>
+      <span class="category-badge">semgrep · avoid_app_run_with_bad_host</span>
+      <div class="finding-location">backend/app.py : line 327</div>
+      <p>Running Flask with <code>host='0.0.0.0'</code> binds to all network interfaces, exposing the development server publicly. The built-in Flask server is not designed for production traffic and lacks security hardening.</p>
+      <div class="remediation-box">
+        <strong>Fix:</strong>
+        <ul>
+          <li>Use a production WSGI server (gunicorn or uWSGI) instead of <code>app.run()</code>.</li>
+          <li>In Docker: <code>CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]</code></li>
+          <li>Or guard with: <code>if __name__ == '__main__': app.run(host='127.0.0.1', debug=False)</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Container -->
+  <div class="section" id="findings-container">
+    <h2>Container &amp; Dockerfile</h2>
+    <p>Scanned with <strong>hadolint</strong> on <code>backend/dockerfile</code> and <code>frontend/dockerfile</code>. Found 3 issues. Checkov IaC scan FAILED (see Scan Coverage).</p>
+
+    <div class="finding medium">
+      <div class="finding-header">
+        <span class="finding-title">DL3018 — Unpinned apk package versions</span>
+        <span class="severity severity-medium">Warning</span>
+      </div>
+      <span class="category-badge">hadolint · DL3018</span>
+      <div class="finding-location">frontend/dockerfile : line 7</div>
+      <p>Using <code>apk add &lt;package&gt;</code> without pinning a version causes non-reproducible builds and can silently pull in vulnerable package versions on rebuild.</p>
+      <div class="remediation-box"><strong>Fix:</strong> Pin versions: <code>apk add --no-cache nodejs=20.x.x-r0 npm=10.x.x-r0</code> (check Alpine package repo for exact version).</div>
+    </div>
+
+    <div class="finding medium">
+      <div class="finding-header">
+        <span class="finding-title">DL3016 — Unpinned npm package install</span>
+        <span class="severity severity-medium">Warning</span>
+      </div>
+      <span class="category-badge">hadolint · DL3016</span>
+      <div class="finding-location">frontend/dockerfile : line 19</div>
+      <p>Using <code>npm install &lt;package&gt;</code> without a pinned version in Dockerfile. This can cause inconsistent builds.</p>
+      <div class="remediation-box"><strong>Fix:</strong> Use <code>npm install serve@14.2.4</code> (or current stable), or use <code>npm ci</code> with a lockfile.</div>
+    </div>
+
+    <div class="finding low">
+      <div class="finding-header">
+        <span class="finding-title">DL3059 — Multiple consecutive RUN instructions</span>
+        <span class="severity severity-low">Info</span>
+      </div>
+      <span class="category-badge">hadolint · DL3059</span>
+      <div class="finding-location">frontend/dockerfile : line 9</div>
+      <p>Multiple consecutive <code>RUN</code> instructions create extra Docker layers. Consolidate for smaller, faster images.</p>
+      <div class="remediation-box"><strong>Fix:</strong> Combine RUN instructions with <code>&amp;&amp;</code>: <code>RUN apk add ... &amp;&amp; npm install ...</code></div>
+    </div>
+
+    <h3>Additional Container Risk (from trivy misconfig)</h3>
+    <div class="finding high">
+      <div class="finding-header">
+        <span class="finding-title">Container image running as root user</span>
+        <span class="severity severity-high">High</span>
+      </div>
+      <div class="finding-location">backend/dockerfile, frontend/dockerfile</div>
+      <p>Neither Dockerfile creates a non-root user. Running as root inside a container is a container breakout risk — if the process is compromised, the attacker may escalate to host root via kernel exploits.</p>
+      <div class="remediation-box">
+        <strong>Fix:</strong> Add to backend/dockerfile:
+        <pre>RUN adduser -D -u 1000 appuser
+USER appuser</pre>
+        Add to frontend/dockerfile (after build stage):
+        <pre>RUN adduser -D -u 1000 appuser
+USER appuser</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remediation Roadmap -->
+  <div class="act-divider" id="remediation-roadmap">Remediation Roadmap</div>
+
+  <div class="section" id="quick-wins">
+    <h2>Quick Wins — Fix Today</h2>
+    <p>3 targeted fixes, estimated <strong>~45 minutes total</strong>. Can be done in a single PR.</p>
+
+    <div class="sprint-card">
+      <h4>Fix 1 — Patch blockchain CVEs (~15 min)</h4>
+      <div class="sprint-meta">Eliminates ~12 Critical + 30 High findings in blockchain/ tree</div>
+      <pre>cd blockchain/
+npm install elliptic@6.6.1 cipher-base@1.0.5 form-data@4.0.4 axios@latest
+npm audit fix
+cd ..</pre>
+      <div class="pr-description">fix(deps): patch critical CVEs in blockchain npm dependencies
+
+- Upgrade elliptic 6.5.4 → 6.6.1 (GHSA-vjh7-7g9h-fjfh: ECDSA malleability)
+- Upgrade cipher-base 1.0.4 → 1.0.5 (CVE-2025-9287: crypto weakness)
+- Upgrade form-data 2.5.2/4.0.1 → 4.0.4 (CVE-2025-7783: prototype pollution)
+- Upgrade axios 1.7.7 → latest (CVE-2025-27152, CVE-2025-58754, CVE-2026-25639)</div>
+    </div>
+
+    <div class="sprint-card">
+      <h4>Fix 2 — Patch frontend CVEs + Werkzeug (~20 min)</h4>
+      <div class="sprint-meta">Eliminates 8 Critical + 20 High npm findings and HIGH Werkzeug CVE</div>
+      <pre>cd frontend/
+npm install axios@latest
+npm audit fix
+cd ..
+
+# Backend Python deps
+sed -i 's/Werkzeug==3.0.1/Werkzeug>=3.0.3/' backend/requirements.txt
+# Or edit manually to: Werkzeug>=3.0.3</pre>
+    </div>
+
+    <div class="sprint-card">
+      <h4>Fix 3 — Add non-root Docker users (~10 min)</h4>
+      <div class="sprint-meta">Eliminates HIGH container misconfiguration finding</div>
+      <pre>--- a/backend/dockerfile
++++ b/backend/dockerfile
+ FROM python:3.11-slim
+ WORKDIR /app
+ COPY requirements.txt .
+ RUN pip install --no-cache-dir -r requirements.txt
+ COPY . .
++RUN adduser -D -u 1000 appuser
++USER appuser
+ CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]</pre>
+      <div class="pr-description">fix(docker): run containers as non-root user
+
+Add dedicated appuser (uid 1000) to both backend and frontend
+Dockerfiles to reduce container breakout risk surface.</div>
+    </div>
+  </div>
+
+  <div class="section" id="fix-this-sprint">
+    <h2>Fix This Sprint</h2>
+    <table>
+      <thead><tr><th>Priority</th><th>Finding</th><th>Action</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td><span class="severity severity-critical">P1</span></td><td>Migrate frontend from ethers@5 → ethers@6</td><td>Run <code>npm install ethers@latest</code>, update import signatures per ethers v6 migration guide</td><td>2–4 hrs</td></tr>
+        <tr><td><span class="severity severity-high">P2</span></td><td>Fix Flask public host binding (semgrep)</td><td>Switch to gunicorn in Dockerfile CMD; restrict <code>app.run()</code> to localhost</td><td>30 min</td></tr>
+        <tr><td><span class="severity severity-high">P3</span></td><td>Pin Dockerfile package versions (DL3018, DL3016)</td><td>Use specific versions in apk add and npm install</td><td>30 min</td></tr>
+        <tr><td><span class="severity severity-high">P4</span></td><td>Run checkov IaC scan locally</td><td><code>checkov -d . --framework dockerfile docker_compose -o json</code> and fix failures</td><td>1 hr</td></tr>
+        <tr><td><span class="severity severity-medium">P5</span></td><td>Add HEALTHCHECK to both Dockerfiles</td><td>Add <code>HEALTHCHECK CMD curl -f http://localhost:PORT/ || exit 1</code></td><td>15 min</td></tr>
+        <tr><td><span class="severity severity-medium">P6</span></td><td>Rotate SECRET_KEY</td><td>Generate new key, update .env, confirm .gitignore covers .env</td><td>10 min</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section" id="plan-next-quarter">
+    <h2>Plan For Next Quarter</h2>
+    <table>
+      <thead><tr><th>Priority</th><th>Finding</th><th>Action</th><th>Effort</th><th>Prerequisites</th></tr></thead>
+      <tbody>
+        <tr><td><span class="severity severity-critical">P1</span></td><td>Full npm dependency tree audit &amp; update policy</td><td>Establish <code>npm audit</code> in CI/CD pipeline; configure Dependabot or Renovate for automatic PRs</td><td>1 day</td><td>CI/CD pipeline</td></tr>
+        <tr><td><span class="severity severity-high">P2</span></td><td>Secrets manager integration</td><td>Move all secrets from .env to AWS Secrets Manager / HashiCorp Vault; remove .env from dev onboarding</td><td>1–2 days</td><td>Cloud account</td></tr>
+        <tr><td><span class="severity severity-high">P3</span></td><td>SonarQube code quality gate</td><td>Add <code>sonar-project.properties</code> and SonarCloud scan step to CI</td><td>0.5 day</td><td>SonarCloud account</td></tr>
+        <tr><td><span class="severity severity-medium">P4</span></td><td>Container image scanning in CI</td><td>Add <code>trivy image</code> scan step after docker build; fail CI on CRITICAL</td><td>0.5 day</td><td>Docker build CI step</td></tr>
+        <tr><td><span class="severity severity-medium">P5</span></td><td>SBOM generation</td><td>Generate Software Bill of Materials with <code>trivy sbom --format cyclonedx</code></td><td>0.5 day</td><td>trivy in CI</td></tr>
+        <tr><td><span class="severity severity-low">P6</span></td><td>Consolidated IaC scanning (checkov)</td><td>Run checkov in unrestricted environment; remediate all Dockerfile + docker-compose failures</td><td>1 day</td><td>CI with full permissions</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+<div class="footer">
+  Generated by <strong>Opsera DevOps Agent</strong> | Security Scan Report — vasthavik | March 20, 2026<br>
+  Scanners: gitleaks · semgrep · trivy · npm audit · hadolint | Risk Score: 95.5/100 (Critical Risk)
+</div>
+</body>
+</html>
